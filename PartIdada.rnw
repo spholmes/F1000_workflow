@@ -1,0 +1,213 @@
+\subsection*{Amplicon bioinformatics: from raw reads to tables}
+This section demonstrates
+the ``full stack'' of amplicon bioinformatics: construction of the
+sample-by-sequence feature table from the raw reads, assignment of 
+taxonomy, and creation of the phylogenetic tree relating the sample
+sequences. 
+
+First we load the necessary packages.
+
+<<externalization>>=
+library("knitr")
+library("BiocStyle")
+opts_chunk$set(cache = FALSE,fig.path="dadafigure/")
+base_dir <- "/Users/susan/Phyloseq/BiocWorklow"
+miseq_path <- file.path(base_dir, "data", "MiSeq_SOP")
+read_chunk(file.path(base_dir, "src", "bioinformatics.R"))
+@ 
+
+<<init>>=
+@ 
+
+The data we will process here are highly-overlapping Illumina Miseq
+2x250 amplicon sequences from the V4 region of the 16S gene \cite{Kozich2013}.
+These 360 fecal samples were collected from 12 mice longitudinally over the
+first year of life, to investigate the development and 
+stabilization of the murine microbiome \cite{schloss2012stabilization}.
+These data can be downloaded from the following location:
+\url{http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar}. 
+
+<<paths>>=
+@ 
+
+\subsection*{Trim and Filter}
+
+We begin by filtering out low-quality sequencing reads and trimming the
+reads to a consistent length. While generally recommended filtering and
+trimming parameters serve as a starting point, no two datasets are
+identical and therefore it is always worth inspecting the quality of the
+data before proceeding.
+
+\begin{figure}
+<<profile>>=
+@ 
+\caption{Forward Error Profiles}
+\label{fig:r profile1}
+\end{figure}
+
+Most Illumina sequencing data shows a trend of decreasing average quality
+towards the end of sequencing reads. 
+
+Here, the forward reads maintain high quality throughout, while the quality
+of the reverse reads drops significantly at about position 160. Therefore,
+we choose to truncate the forward reads at position 245, and the
+reverse reads at position 160. We also choose to trim the first 10 nucleotides
+of each read based on empirical observations across many Illumina datasets that
+these base positions are particularly likely to contain pathological errors.
+
+We combine these trimming parameters with standard filtering
+parameters, the most important being the enforcement of a maximum of 2 expected
+errors per-read \cite{edgar2015unoise}. Trimming and filtering is performed on
+paired reads jointly, i.e. both reads must pass the filter for the pair to pass.
+
+<<filter>>=
+@ 
+
+\subsection*{Infer sequence variants}
+After filtering, the typical amplicon bioinformatics workflows cluster
+sequencing reads into operational taxonomic units (OTUs): groups of
+sequencing reads that differ by less than a fixed dissimilarity
+threshhold. Here we instead use the high-resolution DADA2
+method to to infer sequence variants without any fixed threshhold, thereby 
+resolving variants that differ by as little as one nucleotide \cite{dada2}.
+
+The sequence data is imported into R from demultiplexed fastq files (i.e. one
+fastq for each sample) and simultaneously dereplicated to remove redundancy. We
+name the resulting `derep-class` objects by their sample.
+
+<<derep>>=
+@ 
+
+The DADA2 method relies on a parameterized model of substitution
+errors in order to distinguish sequencing errors from real biological
+variation. Because error rates can (and often do) vary substantially
+between sequencing runs and PCR protocols, the model parameters can be
+discovered from the data itself using a form of unsupervised learning
+in which sample inference is alternated with parameter estimation
+until both are jointly consistent. 
+
+Parameter learning is computationally intensive, as it requires
+multiple iterations of the sequence inference algorithm, and therefore
+it is often useful to estimate the error rates from a (sufficiently
+large) subset of the data.
+
+<<rates>>=
+@ 
+
+In order to verify that the error rates have been reasonably
+well-estimated, we inspect the fit between the observed error rates (black
+points) and the fitted error rates (black lines).
+
+\begin{figure}
+<<plot-rates>>=
+@ 
+\caption{Forward and Reverse Read Error Profiles, showing the
+  frequencies of each type of nucleotide transition as a function of quality.}\label{fig:r
+  errorprofile1}
+\end{figure}
+
+The DADA2 sequence inference method can run in two different modes:
+Independent inference by sample (`pool=FALSE`), and pooled inference from the 
+set of sequencing reads combined from all samples (`pool=TRUE`). Independent
+inference has two major advantages: Computation time is linear
+in the number of samples, and memory requirements are flat with the
+number of samples. This allows scaling out to datasets of almost unlimited
+size. Pooled inference is more computationally taxing, and can become
+intractable for datasets of tens of millions of reads.
+However, pooling improves the detection of rare variants that
+were seen just once or twice in an individual sample but many times across
+all samples. As this dataset is not particularly large, we perform pooled 
+inference.
+
+<<dada>>=
+@ 
+
+Sequence inference removed (nearly) all substitution and
+indel errors from the data. We now merge together the inferred forward 
+and reverse sequences, while removing paired sequences that do not perfectly
+overlap as a final control against residual errors.
+
+<<merge>>=
+@ 
+
+\subsection*{Construct sequence table and remove chimeras}
+
+The DADA2 method produces a sequence table that is a higher-resolution
+analogue to the common "OTU table", i.e. a sample by sequence feature
+table valued by the number of times each sequence was observed in each sample.
+
+<<seqtab>>=
+@ 
+
+Notably, chimeras have not yet been removed. The error model in the
+sequence inference algorithm does not include a chimera component, and
+therefore we expect this sequence table to include many chimeric sequences. 
+We now remove chimeric sequences by comparing each inferred sequence to the
+other sequences in the table, and removing those that can be reproduced by
+stitching together two more abundant sequences.
+
+<<chimeras>>=
+@ 
+
+Typically a substantial fraction of inferred sequence variants, but
+only a small fraction of all reads, are found to be chimeric. That is
+what is observed here: 1502 of 1892 sequence variants were chimeric, but
+these only represented 10\% of all reads.
+
+\subsection*{Assign taxonomy}
+
+One of the benefits of using well-classified marker loci like the 16S
+rRNA gene is the ability to taxonomically classify the sequenced
+variants. The *[dada2](http://bioconductor.org/packages/dada2)*
+package implements the naive Bayesian classifier method for this
+purpose \cite{wang2007naive}. This classifier compares sequence
+variants to a training set of classified sequences. Here we use the
+RDP v14 training set \cite{cole2009rdp}.
+
+<<tax>>=
+@ 
+
+Training set {\tt fasta} formatted files for use with the
+\href{http://bioconductor.org/packages/dada2}{dada2} package are
+available for download at
+\url{https://www.dropbox.com/sh/mfcivbudmc21cqt/AAB1l-AUM5uKvjrR33ct-cTXa?dl=0}.
+
+\subsection*{Construct phylogenetic tree}
+Phylogenetic relatedness is commonly used to inform downstream
+analyses, especially the calculation of phylogeny-aware distances
+between microbial communities. The DADA2 sequence inference method is
+reference-free, so we must construct the phylogenetic tree relating
+the inferred sequence variants de novo. We begin by performing a
+multiple-alignment of the inferred sequences.
+
+<<msa>>=
+@ 
+
+The \Sexpr{CRANpkg("phangorn")} R package is then used to construct a
+phylogenetic tree. Here we first construct a neighbor-joining tree,
+and then fit a GTR+G+I maximum likelihood tree using the
+neighbor-joining tree as a starting point.
+
+<<tree>>=
+@ 
+
+This completes the amplicon bioinformatics portion of the workflow.
+
+\subsection*{Combine data into a phyloseq object}
+
+The \Sexpr{Biocpkg("phyloseq")} package
+organizes and synthesizes the different data types from a typical
+amplicon sequencing experiment into a single data object that can be
+easily manipulated. The last bit of information needed is the sample
+data contained in a \texttt{.csv} file. 
+
+<<samdat>>=
+@ 
+
+The full suite of data for this study -- the sample-by-sequence
+feature table, the sample metadata, the sequence taxonomies, and the
+phylogenetic tree -- can now be combined into a single object.
+
+<<phyloseq>>=
+@ 
+

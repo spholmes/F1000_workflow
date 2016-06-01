@@ -1,0 +1,316 @@
+
+\subsection*{phyloseq}
+
+\BioCpkg{phyloseq}\cite{phyloseqplosone}
+is an R package to import, store, analyze, and graphically display complex 
+phylogenetic sequencing data that has already been 
+clustered into Operational Taxonomic Units (OTUs)
+or more appropriately denoised, 
+and it is most useful when there is also associated 
+sample data, 
+phylogeny, 
+and/or taxonomic assignment of each taxa. 
+\BioCpkg{phyloseq} leverages and builds upon
+many of the tools available in R 
+for ecology and phylogenetic analysis (\citeCRANpkg{vegan}, \citeCRANpkg{ade4}, \citeCRANpkg{ape}), 
+while also using advanced/flexible graphic systems (\citeCRANpkg{ggplot2}) 
+to easily produce publication-quality graphics of complex phylogenetic data. 
+The {\tt phyloseq} package uses a specialized system of S4 data classes 
+to store all related phylogenetic sequencing data 
+as a single, self-consistent, self-describing experiment-level object,
+making it easier to share data and reproduce analyses. 
+In general, phyloseq seeks to facilitate the use of R 
+for efficient interactive and reproducible analysis 
+of amplicon count data jointly with important sample covariates.
+
+\subsection*{Further documentation}
+
+This tutorial shows a useful example workflow,
+but many more analyses are available to you in phyloseq, and R in general,
+than can fit in a single workflow.
+The \href{http://joey711.github.io/phyloseq/}{phyloseq home page}
+is a good place to begin browsing additional phyloseq documentation,
+as are the three vignettes included within the package,
+and linked directly at
+\href{http://bioconductor.org/packages/release/bioc/html/phyloseq.html}{the phyloseq release page on Bioconductor}.
+
+
+%\subsection*{Load Packages}
+
+<<joeysetupknitr, cache=FALSE, include=FALSE>>=
+library("knitr")
+opts_chunk$set(cache = FALSE, fig.path="phyloseqfigure/", 
+               fig.width = 5, fig.height = 3, 
+               warning = FALSE, fig.align = "center", message = FALSE)
+library("BiocStyle")
+@
+<<xtrasetupknitr, cache=FALSE, echo=FALSE>>=
+opts_chunk$set(cache = FALSE, fig.path="phyloseqfigure/", 
+               fig.width = 6, fig.height = 3, 
+               warning = FALSE, fig.align = "center", message = FALSE)
+@
+<<joeysetup, echo=FALSE>>=
+library("phyloseq")
+library("ggplot2")
+library("gridExtra")
+# Kris' ggplot2
+theme_set(theme_bw())
+min_theme <- theme_update(panel.border = element_blank(),
+                          panel.grid = element_blank(),
+                          axis.ticks = element_blank(),
+                          legend.title = element_text(size = 8),
+                          legend.text = element_text(size = 6),
+                          axis.text = element_text(size = 6),
+                          axis.title = element_text(size = 8),
+                          strip.background = element_blank(),
+                          strip.text = element_text(size = 8),
+                          legend.key = element_blank())
+
+@
+
+
+\subsection*{Loading Data}
+Many use cases result in the necessity to import and combine different
+data into a phyloseq class object, 
+this can be done using th \Rfunction{import\_biom}
+function to read recent QIIME format files, older files
+can still be imported with \Rfunction{import\_qiime}.
+More complete details can be found on the
+\href{https://www.bioconductor.org/packages/release/bioc/vignettes/phyloseq/inst/doc/phyloseq-FAQ.html}{phyloseq FAQ page}.
+
+In the previous section the results of \BioCpkg{dada2} sequence processing
+were organized into a phyloseq object.
+This object was also saved in R-native serialized RDS format.
+We will re-load this here for completeness.
+
+<<>>=
+library("phyloseq")
+library("ggplot2")
+library("gridExtra")
+ps0 = readRDS("data/ps.rds")
+ps0
+@
+
+
+\subsubsection*{Shiny-phyloseq}
+
+It can be beneficial to start the data exploration
+process interactively, this often saves time
+in detecting outliers and specific features of the data.
+\href{http://joey711.github.io/shiny-phyloseq/}{Shiny-phyloseq}
+\cite{mcmurdie2015}
+is an interactive web application that provides a graphical user interface to
+the phyloseq package.
+The object just loaded into the R session in this workflow
+is  suitable for this graphical interaction with Shiny-phyloseq.
+
+\subsubsection*{Prevalence Filtering}
+
+\BioCpkg{phyloseq} 
+provides useful tools for filtering, subsetting, and agglomerating taxa --
+a task that is often appropriate or even necessary 
+for effective analysis of microbiome count data.
+In this subsection, we graphically explore the prevalence of taxa
+in the example dataset,
+and demonstrate how this can be used as a filtering criteria.
+One of the reasons to filter in this way
+is to avoid spending much time analyzing taxa 
+that were seen only rarely among  samples.
+This also turns out to be a useful filter of noise
+(taxa that are actually just artifacts of the data collection process),
+a step that should probably be considered essential for datasets constructed
+via heuristic OTU-clustering methods,
+which are notoriously prone to generating spurious taxa.
+
+
+<<prevalencefilter>>=
+# Define prevalence of each taxa
+# (in how many samples did each taxa appear at least once)
+prev0 = apply(X = otu_table(ps0), 
+              MARGIN = ifelse(taxa_are_rows(ps0), yes = 1, no = 2),
+              FUN = function(x){sum(x > 0)})
+prevdf = data.frame(Prevalence = prev0,
+                    TotalAbundance = taxa_sums(ps0),
+                    tax_table(ps0))
+keepPhyla = table(prevdf$Phylum)[(table(prevdf$Phylum) >  5)]
+prevdf1 = subset(prevdf, Phylum %in% names(keepPhyla))
+# Define prevalence threshold as 5% of total samples
+prevalenceThreshold = 0.05 * nsamples(ps0)
+prevalenceThreshold
+# Execute prevalence filter, using `prune_taxa()` function
+ps1 = prune_taxa((prev0 > prevalenceThreshold), ps0)
+ps1
+# Filter entries with unidentified Phylum.
+ps2 = subset_taxa(ps1, Phylum %in% names(keepPhyla))
+ps2
+@ 
+
+\begin{figure}[H]
+<<plotprevalence, fig.width=7.5, fig.height=3.5>>=
+ggplot(prevdf1, aes(TotalAbundance, Prevalence, color = Phylum)) + 
+  geom_hline(yintercept = prevalenceThreshold, alpha = 0.5, linetype = 2) +
+  geom_point(size = 2, alpha = 0.7) +
+  scale_y_log10() + scale_x_log10() +
+  xlab("Total Abundance") + 
+  facet_wrap(~Phylum) 
+@ 
+\caption{Taxa prevalence v. total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
+\end{figure}
+
+\subsubsection*{Agglomerate closely related taxa}
+
+For some experimental questions, 
+it is useful to agglomerate closely-related taxa.
+In this subsection we explore two separate ways 
+in which closely-related taxa can be grouped together
+as a single feature in the phyloseq data object.
+Note that this is only helpful 
+if a biological phenomenon of interest
+actually occurs at the chosen level of agglomeration,
+in which case the grouping-together of these features
+can increase statistical power.
+
+<<glom>>=
+## ---- glom ----
+# Taxonomic agglomeration
+# How many genera are present after filtering?
+taxGlomRank = "Genus"
+length(get_taxa_unique(ps2, taxonomic.rank = taxGlomRank))
+ps3 = tax_glom(ps2, taxrank = taxGlomRank)
+# Phylogenetic agglomeration
+# How many genera are present after filtering?
+h1 = 0.4
+ps4 = tip_glom(ps2, h = h1)
+@
+
+Use phyloseq's \Robject{plot\_tree()} 
+to plot tree of original filtered data,
+the tree after taxonoic agglomeration,
+and the tree after phylogenetic agglomeration.
+Save these as separate plot objects, and then render them together
+on one plot using \Robject{gridExtra::grid.arrange}.
+
+<<plotglomprep>>=
+multiPlotTitleTextSize = 8
+p2tree = plot_tree(ps2,
+                   method = "treeonly", 
+                   ladderize = "left",
+                   title = "Before Agglomeration") +
+  theme(plot.title = element_text(size = multiPlotTitleTextSize))
+p3tree = plot_tree(ps3,
+                   method = "treeonly", 
+                   ladderize = "left",
+                   title = paste0("tax_glom(..., taxrank='", taxGlomRank, "')")) +
+  theme(plot.title = element_text(size = multiPlotTitleTextSize))
+p4tree = plot_tree(ps4, 
+                   method = "treeonly", 
+                   ladderize = "left",
+                   title = paste0("tip_glom(..., h=", h1, ")")) +
+  theme(plot.title = element_text(size = multiPlotTitleTextSize))
+@
+
+\begin{figure}[H]
+<<plotglomtree>>=
+# group plots together
+grid.arrange(nrow = 1, p2tree, p3tree, p4tree)
+@
+\caption{The original tree (left), taxonomic agglomeration at Genus rank (middle), phylogeentic agglomeration at a fixed distance of 0.4 (right).}
+\label{fig:glomsummary}
+\end{figure}
+
+
+\subsubsection*{Abundance value transformation}
+
+It is usually necessary to transform microbiome count data
+to account for differences in library size, variance, scale, etc.
+The phyloseq package provides a flexible interface for defining
+new functions to accomplish these transformations of the abundance values
+via the \Robject{transform\_sample\_counts()} function.
+The first argument to this function is the phyloseq object you want to transform,
+and the second argument is an R function that defines the transformation.
+The R function is applied sample-wise, expecting that the first unnamed argument
+is a vector of taxa counts in the same order as the phyloseq object.
+Additional arguments are passed on to the function
+specified in the second argument, 
+providing an explicit means to include
+pre-computed values, previously defined parameters/thresholds, 
+or any other object that might be appropriate 
+for computing the transformed values of interest.
+
+This example begins by defining a custom plot function,
+\Robject{plot\_abundance()},
+that uses phyloseq's \Robject{psmelt()} function
+to define a relative abundance graphic.
+We will use this to compare more easily differences
+in scale and distribution of the abundance values
+in our phyloseq object before and after transformation.
+
+<<abundancetransformation>>=
+plot_abundance = function(physeq, ylabn = "",
+                          Facet = "Order", 
+                          Color = "Phylum"){
+  mphyseq = psmelt(physeq)
+  mphyseq <- subset(mphyseq, Abundance > 0)
+  ggplot(data = mphyseq, 
+         mapping = aes_string(x = "sex", y = "Abundance",
+                              color = Color, fill = Color)) + 
+    geom_violin(fill = NA) +
+    geom_point(size = 1, alpha = 0.3,
+               position = position_jitter(width = 0.3)) +
+    facet_wrap(facets = Facet) + ylab(ylabn) +
+    scale_y_log10() 
+}
+@
+
+The transformation in this case converts the counts
+from each sample into their frequencies,
+often referred to as \emph{proportions}
+or \emph{relative abundances}.
+This function is so simple that it is easiest
+to define it within the function call to 
+\Robject{transform\_sample\_counts()}.
+
+<<abundancetransformation2>>=
+# Transform to relative abundance. Save as new object.
+ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
+@
+
+Now plot the abundance values before and after transformation.
+
+\begin{figure}[H]
+<<abundancetransformation3, fig.show="hold">>=
+plot_abundance(ps3,"Original Abundances")
+plot_abundance(ps3ra,"Relative Abundances")
+@
+\caption{
+Comparison of original abundances (top panel) 
+and relative abundances (lower), both are shown on a log scale.
+}
+\end{figure}
+
+
+\subsection*{Subset by taxonomy}
+
+Notice on the previous plot that 
+\emph{Lactobacillales} appears to be a taxonomic Order
+with bimodal abundance profile in the data.
+We can check for a taxonomic explanation of this pattern 
+by plotting just that taxonomic subset of the data.
+For this, we subset with the \Rfunction{subset\_taxa()} function,
+and then specify a more precise taxonomic rank
+to the \Robject{Facet} argument of the \Robject{plot\_abundance} function
+that we defined above.
+
+\begin{figure}[H]
+<<subsettaxa>>=
+psOrd = subset_taxa(ps3ra, Order == "Lactobacillales")
+plot_abundance(psOrd, Facet = "Genus", Color = NULL)
+@
+\caption{Violin plot of the relative abundances of Lactobacillales taxonomic Order, 
+grouped by host sex and genera. 
+Here it is clear that the apparent biomodal distribution 
+of Lactobacillales on the previous plot 
+was the result of a mixture of two different genera,
+with the typical \emph{Lactobacillus} relative abundance 
+much larger than \emph{Streptococcus}.}
+\end{figure}

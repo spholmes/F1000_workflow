@@ -1,0 +1,321 @@
+\documentclass[9pt,a4paper]{extarticle}
+\usepackage{f1000_styles}
+%\usepackage{Bioconductor} 
+\usepackage{natbib}
+\usepackage{hyperref}
+\usepackage{float}
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+
+%%%%%%%%%%%%%%%%%%%%%%%Replace BiocStyle%%%%%%%%%%%%%%%%%%%%%%%
+\RequirePackage{color}
+\definecolor{BiocBlue}{RGB}{24,129,194}
+\definecolor{BiocGreen}{RGB}{135,177,63}
+\definecolor{BiocGray}{cmyk}{0,0,0,0.50}
+\definecolor{BiocMagenta}{rgb}{1, 0, 1}
+\definecolor{BiocRed}{rgb}{1, 0, 0}
+\definecolor{BiocBittersweet}{cmyk}{0,0.75,1,0.24}
+
+
+
+\usepackage{xspace}
+
+% R
+\let\proglang=\textit
+\let\code=\texttt 
+\newcommand{\Rcode}{\code}
+\newcommand{\pkgname}[1]{\textit{#1}\xspace}
+\newcommand{\Rpkg}[1]{\pkgname{#1} \xspace}
+\newcommand{\citepkg}[1]{\cite{#1}}
+
+% CRAN
+\newcommand{\CRANurl}[1]{\url{http://cran.r-project.org/package=#1}}
+%% CRANpkg
+\makeatletter
+\def\CRANpkg{\@ifstar\@CRANpkg\@@CRANpkg}
+\def\@CRANpkg#1{\href{http://cran.r-project.org/package=#1}{\pkgname{#1}}}
+%\footnote{\CRANurl{#1}}}
+\def\@@CRANpkg#1{\href{http://cran.r-project.org/package=#1}{\pkgname{#1}}} %package\footnote{\CRANurl{#1}}}
+\makeatother
+%% citeCRANpkg
+\makeatletter
+\def\citeCRANpkg{\@ifstar\@citeCRANpkg\@@citeCRANpkg}
+\def\@citeCRANpkg#1{\CRANpkg{#1}\cite*{Rpackage:#1}}
+\def\@@citeCRANpkg#1{\CRANpkg{#1}~\cite{Rpackage:#1}}
+\makeatother
+\newcommand{\CRANnmf}{\href{http://cran.r-project.org/package=NMF}{CRAN}}
+\newcommand{\CRANnmfURL}{\url{http://cran.r-project.org/package=NMF}}
+
+% Bioconductor
+\newcommand{\BioCurl}[1]{\url{http://www.bioconductor.org/packages/release/bioc/html/#1.html}}
+\newcommand{\BioCpkg}[1]{\href{http://www.bioconductor.org/packages/release/bioc/html/#1.html}{\pkgname{#1}}}
+%\footnote{\BioCurl{#1}}}
+\newcommand{\citeBioCpkg}[1]{\BioCpkg{#1}~\cite{Rpackage:#1}}
+% Bioconductor annotation
+\newcommand{\BioCAnnurl}[1]{\url{http://www.bioconductor.org/packages/release/data/annotation/html/#1.html}}
+\newcommand{\BioCAnnpkg}[1]{\href{http://www.bioconductor.org/packages/release/data/annotation/html/#1.html}{\Rcode{#1}} annotation package\footnote{\BioCAnnurl{#1}}}
+\newcommand{\citeBioCAnnpkg}[1]{\BioCAnnpkg{#1}~\cite{Rpackage:#1}}
+\newcommand\Githubpkg[1]{\GithubSplit#1\relax}
+\def\GithubSplit#1/#2\relax{{\href{https://github.com/#1/#2}%
+    {\Rpackage{#2}}}}
+%
+%\newcommand{\Rcode}[1]{\texttt{#1}}
+\newcommand{\Rfunction}[1]{\Rcode{#1}}
+\newcommand{\Robject}[1]{\Rcode{#1}}
+\newcommand{\Rclass}[1]{\textit{#1}}
+\newcommand{\Rpackage}[1]{\textit{#1}}
+%
+\newcommand{\bioccomment}[1]{\textsl{\textcolor{BiocGray}{comment: #1}}}
+\newcommand{\warning}[1]{\textsl{\textcolor{BiocMagenta}{warning: #1}}}
+\newcommand{\fixme}[1]{\textsl{\textcolor{BiocBittersweet}{fixme: #1}}}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%Replace BiocStyle%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+
+\graphicspath{{figure/}{dadafigure/}{analysisfigure/}{phyloseqfigure/}}
+
+
+
+\begin{document}
+\pagestyle{front}
+
+\title{\textit{Bioconductor} Workflow for Microbiome Data Analysis: from raw reads to community analyses.}
+%\titlenote{The title should be detailed enough for someone to know whether the article would be of interest to them, but also concise. Please ensure the broadness and claims within the title are appropriate to the content of the article itself.}
+\author[1]{Ben J Callahan}
+\author[1]{Kris Sankaran}
+\author[1]{Julia A Fukuyama}
+\author[4]{Paul J McMurdie}
+\author[5]{Susan P Holmes}
+\affil[1]{{\tt\{benjc,kriss1,jaf88\}@stanford.edu}, Statistics Department, Sequoia Hall, Stanford, CA 94305}
+\affil[4]{{\tt mcmurdie@stanford.edu}, Whole Biome Inc, San Francisco,  CA 94107 }
+\affil[5]{Corresponding author, {\tt susan@stat.stanford.edu}, Statistics Department, Sequoia Hall, Stanford, CA 94305}
+
+
+\maketitle \thispagestyle{front} 
+%Please provide full affiliation
+%information (including full institutional address, ZIP code and e-mail
+%address) for all authors, and identify who is/are the corresponding
+%author(s).
+
+\begin{abstract}
+High-throughput sequencing of PCR-amplified taxonomic markers
+(like the 16S rRNA gene)
+has enabled a new level of analysis of
+complex bacterial communities known as microbiomes.  Many tools exist
+to quantify and compare abundance levels or OTU composition of
+communities in different conditions.  The sequencing reads have to be
+denoised and assigned to the closest taxa from a reference
+database. Common approaches use a notion of 97\% similarity and
+normalize the data by subsampling to eqalize library sizes.  In this
+paper, we show that statistical models allow more accurate abundance
+estimates. By providing a complete workflow in R, we enable the user
+to do sophisticated downstream statistical analyses, whether
+parametric or non-parametric. We provide examples of using the \R{}
+packages {\tt dada2, phyloseq, DESeq2, ggplot2} and {\tt vegan} to filter, visualize and
+test microbiome data. We also provide examples of supervised analyses using random
+forests and nonparametric testing using community networks and the {\tt ggnetwork}
+package.
+\end{abstract}
+
+\section*{Introduction}
+The {\em microbiome} is formed of the ecological communities of
+microorganisms that dominate the living world. Bacteria can now be
+identified through the use of next generation sequencing applied at
+several levels.  Shotgun sequencing of all bacteria in a sample
+delivers knowledge of all the genes present. Here we will only be
+interested in the identification and quantification of individual taxa
+(or species) through a `fingerprint gene' called 16s rRNA which is
+present in all bacteria. This gene presents several variable regions
+which can be used to identify the different taxa.
+
+Previous standard workflows depended on clustering all 16s rRNA
+sequences (generated by next generation amplicon sequencing)
+that occur within a 97\% radius of similarity and then
+assigning these to `OTUs' from reference trees 
+\cite{caporaso2010qiime,mothur}. These approaches do not
+incorporate all the data, in particular sequence quality information and statistical information
+available on the reads were not incorporated into the assignments.
+
+In contrast, the {\bf de novo} read counts used here will be
+constructed through the incoporation of both the quality scores and sequence frequencies in
+a probabilistic  noise model for nucleotide transitions. For more details
+on the algorithmic  implementation of this
+step see \cite{dada2}.
+
+After filtering the sequences and removing the chimerae, the data
+are compared to a standard database of bacteria and labeled.
+In this workflow, we have used
+the labeled sequences to build a de novo phylogenetic with the
+\CRANpkg{phangorn}.
+
+The key step in the sequence analysis is the manner in which reads are
+denoised and assembled into groups we have chosen to call {RSVs (Ribosomal Sequence Variants)} instead of
+the traditional {OTUs (Operational Taxonomic Units)}.
+
+This article describes a computational workflow for performing
+denoising, filtering, data transformations, visualization, 
+supervised learning analyses, community network tests, hierarchical testing and linear models. We provide all the code and give
+several examples of different types of analyses and use cases. 
+There are often many
+different objectives in experiments involving microbiome data and we
+will only give a flavor for what could be possible once the data has
+been imported into R.
+
+
+In addition, the code can be easily adapted to accommodate batch
+effects, covariates and multiple experimental factors.
+
+The workflow is based on software packages from the open-source
+Bioconductor project \citep{Huber:2015}.  We provide all steps
+necessary from the denoising and identification of the reads input as
+raw sequences in {\tt fastq} files to the comparative analyses of the
+samples and analyses of the abundances according to multiple available
+covariates.
+
+\section*{Methods}
+
+%%%%%%%%%%%%
+\input{PartIdada.tex}
+%%%%%%%%%%%%%
+\input{PartIIphyloseq.tex}
+%%%%%%%%%%%%%
+\input{PartIIIanalysis.tex}
+%%%%%%%%%%%%%
+
+
+
+\subsection*{Operation}
+The programs and source for this article can be run using version {\tt 3.3}
+of \href{https://cran.r-project.org}{R} and version {\tt 3.3} of \href{https://www.bioconductor.org/install/}{Bioconductor}.
+
+
+\section*{Conclusions} % Optional - only if novel data or analyses are included
+We have shown how a complete workflow in \R{} is now available to denoise, identify 
+and normalize next generation amplicon sequencing reads 
+using probabilistic models with parameters fit using the data at hand.
+
+We have provided a brief overview of all the analyses that
+become possible once the data has been imported into the \R{} environment.
+Multivariate projections using the phylogenetic tree as the relevant distance between
+OTUs/RSVs can be done using weighted unifrac or double principal coordinate analyses
+using the \BioCpkg{phyloseq} package.
+Biplots  provide the user with an interpretation key. These biplots have been extended
+to triplots in the case of multidomain data incorporating genetic, metabolic and taxa abundances.
+We illustrate the use of  network based analyses, whether the community graph is provided from other sources
+or from a taxa co-occurrence computation using a Jaccard distance.
+
+We have briefly covered a small example of using three 
+supervised learning functions (random forests, partial least squares and
+) to predict a response variable, 
+
+
+The main challenges in tackling microbiome data come from the many 
+different levels of heterogeneity both at the input and output levels.
+These are easily accommodated through R's capacity to combine data
+into S4 classes. We are able to include layers of
+information, trees, sample data description matrices, contingency table
+in the phyloseq data sctructures. The plotting facilities of
+\CRANpkg{ggplot2} and \CRANpkg{ggnetwork} allow for the layering of information in the output into
+plots that combine graphs, multivariate information and maps of the relationships
+between covariates and taxa abundances. The layering concept allows the user to provide
+reproducible 
+publication level figures with multiple heterogeneous sources of information.
+Our main goal in providing these tools has been to enhance the statistical power
+of the analyses by enabling the user to combine frequencies, quality scores and
+covariate information into complete and testable projections.
+
+\section*{Summary} 
+
+This illustration of possible workflows for microbiome data combining trees, networks,
+normalized read counts and sample information showcases the capabilities 
+and reproducibility of an R based system for analysing bacterial communities.
+We have implemented key components in {\tt C} wrapped within the
+Bioconductor package
+\BioCpkg{dada2} to enable the different steps to be undertaken on a laptop.
+
+Once the sequences have been filtered and tagged they can be assembled into a phylogenetic tree directly
+in R using the maximum likelihood tree estimation available in \CRANpkg{phangorn}.
+The sequences are then assembled into a phyloseq object containing all the sample covariates,
+the phylogenetic tree and the sample-taxa contingency table.
+
+These data can then be visualized interactively with Shiny-phyloseq, plotted with one line 
+wrappers in phyloseq and filtered or transformed very easily.
+
+The last part of the paper shows more complex analyses that require direct plotting and advanced statistical analyses.
+
+
+
+Multivariate ordination methods allow useful lower dimensional projections in the presence of phylogenetic
+information or multi-domain data as shown in an example combining metabolites, OTU abundances, 
+
+Supervised learning methods provide lists of the most relevant taxa in
+discriminating between groups.
+
+Bacterial communities can be represented as co-occurrence graphs
+using network based plotting procedures available in R. We have also
+provided examples where these graphs can be used to test
+community structure through non parametric permutation resampling. 
+This provides implementations of the Friedman Rafsky\cite{friedman1979multivariate} tests for microbiome data
+which have not been published previously.
+
+
+
+
+
+
+
+\section*{Data availability} % Optional - only if novel data or analyses are included
+Intermediary data for the analyses are made available at the Stanford
+digital repository permanent url for this paper: http://purl.stanford.edu/wh250nn9648.
+All other data have been previously published and the links are included in
+the paper.
+
+
+\section*{Software availability}
+This section will be generated by the Editorial Office before publication. 
+
+\begin{enumerate}
+\item URL link to where the software can be downloaded from or used by a non-coder.
+Bioconductor packages at: \url{https://www.bioconductor.org}.
+CRAN packages at: \url{https://cran.r-project.org}.
+
+Permanent repository for the data and program source of this paper: \url{http://purl.stanford.edu/wh250nn9648}.
+\item URL link to the author's version control system repository containing the source code (AUTHOR TO PROVIDE; required)
+\item Link to source code as at time of publication ({\textit{F1000Research}} TO GENERATE)
+\item Link to archived source code as at time of publication ({\textit{F1000Research}} TO GENERATE)
+\item Software license: Artistic License 2.0. 
+%(AUTHOR TO PROVIDE; required)
+\end{enumerate}
+
+
+
+\section*{Author contributions}
+BJC, KS, JAF, PJM and SPH developed the software tools,
+BJC, KS, JAF, PJM  and KS developed statistical 
+methods and tested the workflow on the Mouse  data sets.
+ BJC,  KS, JAF, PJM and SPH wrote the article.
+\section*{Competing interests}
+No competing interests were disclosed.
+
+\section*{Grant information}
+This work was partially supported by the NSF (DMS-1162538 to S.P.H.), the NIH (R01AI112401 to SPH), and a Stanford Interdisciplinary Graduate Fellowship supported JAF.
+
+\section*{Acknowledgments}
+The authors would like to thank the members of the Relman Lab for their valuable insights on microbiology and sequencing.
+
+
+{\small\bibliographystyle{unsrt}
+\bibliography{F1000WF}}
+
+
+\end{document}
+
+

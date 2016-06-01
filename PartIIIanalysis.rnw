@@ -1,0 +1,805 @@
+At this stage in the workflow, after converting raw reads to
+interpretable species abundances, and after filtering and transforming
+these abundances to focus attention on scientifically meaningful
+quantities, we are in a position to consider more careful statistical
+analysis. R is an ideal environment for performing these analyses, as
+it has an active community of package developers building simple
+interfaces to sophisticated techniques. As a variety of methods are
+available, there is no need to commit to any rigid analysis strategy a
+priori. Further, the ability to easily call packages without
+reimplementing methods frees researchers to iterate rapidly through
+alternative analysis ideas. The advantage of performing this full
+workflow in R is that this transition from bioinformatics to
+statistics is effortless.
+
+We back these claims by illustrating several analysis on the mouse
+data prepared above. We experiment with several flavors of exploratory
+ordination before shifting to more formal testing and modeling,
+explaining the settings in which the different points of view are most
+appropriate. Finally, we provide example analysis of multitable data,
+using a study in which both metabolomic and microbial abundance
+measurements were collected on the same samples, to demonstrate that
+the general workflow presented here can be adapted to the multitable
+setting.
+
+<<overall-setup, message = FALSE, warning = FALSE, echo=FALSE>>=
+source(file.path("src/analysis-setup.R"))
+library("knitr")
+src <- list.files("src", full.names = TRUE)
+read_src <- sapply(src, read_chunk)
+opts_chunk$set(fig.width = 6, fig.height = 4, warning = FALSE, message = FALSE, cache = TRUE, 
+               fig.align = "center", cache.path = "cache-analysis/", fig.path = "analysisfigure/")
+options(digits = 3, width = 80,prompt = " ", continue = " ")
+@
+
+
+\subsubsection*{Preprocessing}
+
+Before doing the multivariate projections, we will add a few columns
+to our sample data, which can then be used to annotate plots. From
+Figure \ref{fig:preprocessing-setup}, we see that the ages of the mice
+come in a couple of groups, and so we make a categorical variable
+corresponding to young, middle-aged, and old mice. We also record the
+total number of counts seen in each sample and log-transform the data
+as an approximate variance stabilizing transformation.
+<<preprocessing-setup, echo=FALSE>>=
+@
+
+\begin{figure}[H]
+<<preprocessing-plot, fig.width=3, fig.height=2.5, fig.show = "hold">>=
+@
+\caption{Preliminary plots suggest certain preprocessing steps. The
+  histogram on the left motivates the creation of a new categorical
+  variable, binning age into one of the three peaks. The histogram on
+  the right suggests that a $\log\left(1 + x\right)$ transformation is
+  sufficient for normalizing the abundance data.}
+\label{fig:preprocessing-setup}
+\end{figure}
+
+For a first pass, we look at principal coordinates analysis (PCoA) with
+either the Bray-Curtis dissimilarity on the weighted Unifrac
+distance. We see immediately that there are six outliers. These turn
+out to be the samples from females 5 and 6 on day 165 and the samples
+from males 3, 4, 5, and 6 on day 175. We will take them out, since we
+are mainly interested in the relationships between the non-outlier
+points.
+<<outlier-detect, eval = T>>=
+@
+
+\begin{figure}[H]
+<<outlier-detect-plot, fig.height = 1.8, fig.width = 7>>=
+@
+\label{fig:outlier-detect}
+\caption{An ordination on the logged abundance data reveals a few
+  outliers.}
+\end{figure}
+Before we continue, we should check the two female
+outliers -- they have been taken over by the same OTU/RSV, which has a
+relative abundance of over 90\% in each of them. This is the only time
+in the entire data set that this RSV has such a high relative
+abundance -- the rest of the time it is below 20\%. In particular, its
+diversity is by far the lowest of all the samples.
+
+\begin{figure}[H]
+<<outlier-analyze, fig.width=4, fig.height=2>>=
+@
+\caption{The outlier samples are dominated by a single RSV.}
+\label{fig:outlier-analysize}
+\end{figure}
+
+\subsection*{Different Ordination Projections}
+
+As we have seen, an important first step in analyzing microbiome data is to do
+unsupervised, exploratory analysis. This is simple to do in
+\BioCpkg{phyloseq}, which provides many distances and ordination
+methods.
+
+After documenting the outliers, we are going to compute ordinations
+with these outliers removed and more carefully study the output. We
+see that there is a fairly substantial age effect that is consistent
+between all the mice, male and female, and from different
+litters. We'll first perform a PCoA using Bray-Curtis dissimilarity.
+
+The first plot shows the ordination of the samples, and we see that
+the second axis corresponds to an age effect, with the samples from
+the younger and older mice separating fairly well. The first axis
+correlates fairly well with library size (this is not shown).
+The first axis explains about twice the variability than the first,
+this translates into the elongated form of the ordination plot.
+
+<<ordinations-bray>>=
+@
+
+\begin{figure}[H]
+<<ordinations-bray-plot, fig.height = 3, fig.width = 8>>=
+@
+\caption{A PCoA plot using Bray-Curtis distance between samples.}
+\label{fig:ordinations-bray}
+\end{figure}
+
+Next we look at double principal coordinates analysis (DPCoA)
+\cite{Pavoine:2004,Fukuyama:2012}, which is a phylogenetic ordination method and
+which gives a biplot representation of both samples and taxonomic categories. We see
+again that the second axis corresponds to young vs. old 
+mice, and the biplot suggests an interpretation of the second
+axis: samples that have larger scores on the second axis have more
+taxa from Bacteroidetes and one subset of Firmicutes.
+
+<<ordinations-dpcoa, eval =T>>=
+@
+
+\begin{figure}
+<<ordinations-dpcoa-plot,fig.height=2,fig.width=8>>=
+@
+\caption{A DPCoA plot incorporates phylogenetic information, but is
+  dominated by the first axis.}
+\label{fig:ordinations-dpcoa}
+\end{figure}
+
+\begin{figure}
+<<ordinations-dpcoa-species,fig.height=3, fig.width = 8>>=
+@
+\caption{The DPCoA sample positions can be interpreted with respect to
+  the species coordinates in this display.}
+\label{fig:ordinations-dpcoa-species}
+\end{figure}
+
+Finally, we can look at the results of PCoA with weighted Unifrac. As
+before, we find that the second axis is associated with an age effect,
+which is fairly similar to DPCoA. This is not surprising, because both
+are phylogenetic ordination methods taking abundance into
+account. However, when we compare biplots, we see that the DPCoA
+gave a much cleaner interpretation of the second axis, compared to
+weighted Unifrac.
+
+<<ordinations-wuf, eval =T>>=
+@
+
+\begin{figure}
+<<ordinations-wuf-plot,fig.height=2, fig.width = 8>>=
+@
+\caption{The sample positions produced by a PCoA using weighted
+  Unifrac.}
+\label{fig:ordinations-wuf}
+\end{figure}
+
+\begin{figure}
+<<ordinations-wuf-species,fig.height=3, fig.width = 8>>=
+@
+\caption{Species coordinates that can be used to interpret the sample
+  positions from PCoA with weighted Unifrac. Compared to the
+  representation in Figure \ref{fig:ordinations-dpcoa-species}, this
+  display is harder to interpret.}
+\label{fig:ordinations-wuf-species}
+\end{figure}
+
+\subsubsection*{PCA on ranks}
+
+Microbial abundance data is often heavy-tailed, and sometimes it can
+be hard to identify a transformation that brings the data to
+normality. In these cases, it can be safer to ignore the raw
+abundances altogether, and work instead with ranks. We demonstrate
+this idea using a rank-transformed version of the data to perform
+PCA. First, we create a new matrix, representing the abundances by
+their ranks, where the microbe with the smallest in a sample gets
+mapped to rank 1, second smallest rank 2, etc.
+
+<<pca-rank-get-ranks>>=
+@
+
+Naively using these ranks could make differences between pairs of low
+and high abundance microbes comparable. In the case where many bacteria are absent or present at trace amounts, an artificially large difference in rank could occur\cite{holmes2011} for minimally abundant taxa. 
+To avoid this, all those
+microbes with rank below some threshold are set to be tied at 1. The ranks for
+the other microbes are shifted down, so there is no large gap between
+ranks. This transformation is illustrated in Figure
+\ref{fig:pca-rank-visualize-procedure}.
+
+<<pca-rank-truncate>>=
+@
+
+\begin{figure}
+<<pca-rank-visualize-procedure, fig.height = 2>>=
+@
+\caption{The association between abundance and rank, for a few
+  randomly selected samples. The numbers of the $y$-axis are those
+  supplied to PCA.}
+\label{fig:pca-rank-visualize-procedure}
+\end{figure}
+
+We can now perform PCA and study the resulting biplot, given
+in Figure \ref{fig:pca-rank-pca-plot}. To produce annotation for this
+figure, we used the following block.
+
+<<pca-rank-pca-setup>>=
+@
+
+The results are similar to the
+PCoA analyses computed without applying a truncated-ranking
+transformation, reinforcing our confidence in the analysis on the
+original data.
+
+\begin{figure}
+<<pca-rank-pca-plot, fig.height = 3.2, fig.width = 8.5>>=
+@
+\caption{The biplot resulting from the PCA after the truncated-ranking
+  transformation.}
+\label{fig:pca-rank-pca-plot}
+\end{figure}
+
+\subsubsection*{Canonical correspondence}
+
+Canonical Correspondence Analysis (CCpnA) is an approach to ordination
+of a species by sample table that incorporates supplemental
+information about the samples. As before, the purpose of creating
+biplots is to determine which types of bacterial communities are most
+prominent in different mouse sample types. It can be easier to
+interpret these biplots when the ordering between samples reflects
+sample characteristics -- variations in age or litter status in the
+mouse data, for example -- and this central to the design of CCpnA.
+
+The function allows to create biplots where the positions of samples are determined by
+similarity in both species signatures and environmental
+characteristics; in contrast, principal components analysis or
+correspondence analysis only look at species signatures. More
+formally, it ensures that the resulting CCpnA directions lie in the
+span of the environmental variables; thorough treatments are available
+in \cite{terBraak:1985, greenacre2007correspondence}.
+
+Like PCoA and DPCoA, this method can be run using
+\Rfunction{ordinate} in \BioCpkg{phyloseq}. In order to use
+supplemental sample data, it is necessary to provide an extra
+argument, specifying which of the features to consider -- otherwise,
+\BioCpkg{phyloseq} defaults to using all  \Robject{sample\_data}
+measurements when producing the ordination.
+
+<<ccpna-correspondence-analysis>>=
+@
+
+To access the positions for the biplot, we can use the
+\Rfunction{scores} function in the \CRANpkg{vegan}. Further, to
+facilitate figure annotation, we also join the site scores with the
+environmental data in the \Robject{sample\_data} slot. Of the 23 total
+taxonomic orders, we only explicitly annotate the four most abundant
+-- this makes the biplot easier to read.
+
+<<ccpna-join-data>>=
+@
+
+Figures \ref{fig:ccpna-plot-age} and \ref{fig:ccpna-plot-litter} plot these
+annotated scores, splitting sites by their age bin and litter
+membership, respectively. We have labeled individual microbes that are
+outliers along the second CCpnA direction.
+
+Evidently, the first CCpnA direction distinguishes between mice
+in the two main age bins. Circles on the left and right of the biplot
+represent microbes that are characteristic of younger and older mice,
+respectively. The second CCpnA direction splits off the few mice
+in the oldest age group; it also partially distinguishes between the two
+litters. These samples low in the second CCpnA direction have more of
+the outlier microbes than the others.
+
+This CCpnA analysis supports our conclusions from the earlier
+ordinations -- the main difference between the microbiome communities
+of the  different mice lies along the age axis. However, in situations
+where the influence of environmental variables is not so strong, CCA
+can have more power in detecting such associations. In general, it
+can be applied whenever it is desirable to incorporate
+supplemental data, but in a way that (1) is less aggressive than
+supervised methods, and (2) can use several environmental variables at
+once.
+
+\begin{figure}[H]
+<<ccpna-plot-age, fig.height = 3, fig.width = 8>>=
+@
+\caption{The mouse and microbe scores generated by CCpnA. The sites and
+  species are triangles and circles, respectively. The separate panels
+  indicate different age groups.}
+\label{fig:ccpna-plot-age}
+\end{figure}
+
+\begin{figure}[H]
+<<ccpna-plot-litter, fig.height = 3, fig.width = 9>>=
+@
+\caption{The analogue to Figure \ref{fig:ccpna-plot-age}, faceting by
+  litter membership rather than age bin.}
+\label{fig:ccpna-plot-litter}
+\end{figure}
+
+\clearpage
+\subsubsection*{Supervised learning}
+\label{sec:supervised-learning}
+
+Here we illustrate some supervised learning methods that can be easily
+run in R. The \CRANpkg{caret} wraps many prediction algorithms
+available in R and performs parameter tuning automatically. Since we
+saw that microbiome signatures change with age, we'll apply supervised
+techniques to try to predict age from microbiome composition.
+
+We'll first look at Partial Least Squares (PLS)\cite{PLSwold}. 
+The first step is to
+divide the data into training and test sets, with assignments done by mouse,
+rather than by sample, to ensure that the test set realistically
+simulates the collection of new data. Once we split the data, we can
+use the \Rfunction{train} function to fit the PLS model.
+
+<<caret-pls>>=
+@
+
+Next we can predict class labels on the test set using the
+\Rfunction{predict} function and compare to the truth. We see that the
+method does an excellent job of predicting age.
+<<caret-pls-confusion>>=
+@
+
+As another example, we can try out random forests. This is run in
+exactly the same way as PLS, by switching the \Robject{method}
+argument from \Robject{pls} to \Robject{rf}. Random forests also
+perform well at the prediction task  on this test set, though there
+are more old mice misclassified than young.
+<<caret-rf, eval =T>>=
+@
+
+To interpret these PLS and random forest results, it is standard to
+produce biplots and proximity plots, respectively. The code below
+extracts coordinates and supplies annotation for points to include on
+the PLS biplot.
+
+<<caret-pls-scores-loadings>>=
+@ 
+
+The resulting biplot is displayed in Figure \ref{fig:caret-pls-scores-plot};
+it can be interpreted similarly to earlier ordination diagrams, with
+the exception that the projection is chosen with an explicit reference
+to the binned age variable. Specifically, PLS identifies a subspace to
+maximize discrimination between classes, and the biplot displays
+sample projections and RSV coefficients with respect to this
+subspace.
+
+\begin{figure}[H]
+<<caret-pls-scores-plot, fig.height = 2.5>>=
+@ 
+\caption{PLS produces a biplot representation designed to separate
+  samples by a response varaible.}
+\label{fig:caret-pls-scores-plot}
+\end{figure}
+
+A random forest proximity plot is displayed in Figure
+\ref{fig:caret-proximity}. To generate this representation, a distance
+is calculated between samples based on how frequently sample occur in
+the same tree partition in the random forest's bootstrapping
+procedure. If a pair of samples frequently occur in the same
+partition, the pair is assigned a low distance. The resulting
+distances are then input to PCoA, giving a glimpse into the random
+forests' otherwise complex classification mechanism. The separation
+between classes is clear, and manually inspecting points would reveal
+what types of samples are easier or harder to classify.
+
+\begin{figure}[H]
+<<caret-proximity, fig.height = 2.5>>=
+@ 
+\caption{The random forest model determines a distance between
+  samples, which can be input into PCoA to produce a proximity plot.}
+\label{fig:caret-proximity}
+\end{figure}
+
+To further understand the fitted random forest model, we identify the
+microbe with the most influence in the random forest prediction. This
+turns out to be a microbe in family \emph{Lachnospiraceae} and genus
+\emph{Roseburia}. Figure \ref{fig:caret-rf-importance} plots its abundance
+across samples; we see that it is uniformly very low from age 0 to 100
+days and much higher from age 100 to 400 days.
+
+\begin{figure}[H]
+<<caret-rf-importance, fig.height=3, fig.width=5>>=
+@
+\caption{A microbe in genus \emph{Roseburia} becomes much more abundant in
+  the 100 to 400 day bin.}
+\label{fig:caret-rf-importance}
+\end{figure}
+
+
+
+\section*{Graph-based visualization and testing}
+
+\subsection*{Creating and plotting graphs}
+
+Phyloseq has functionality for creating graphs based on thresholding a
+distance matrix, and the resulting networks can be plotting using the
+\CRANpkg{ggnetwork}. This package overloads the ggplot syntax, so you
+can use the function ggplot on an igraph object and add
+\Robject{geom\_edges} and \Robject{geom\_nodes} geoms to plot the
+network. To be able to color the nodes or edges a certain way, we need
+to add these attributes to the igraph object. Below we create a
+network by thresholding the Jaccard dissimilarity (the default
+distance for the function \Robject{make\_network}) at .35, and then we
+add an attribute to the vertices indicating which mouse the sample
+came from and which litter the mouse was in. Then we can plot the
+network with the coloring by mouse and shape by litter. We see the
+resulting network in Figure \ref{fig:ggnetwork}, and we can see that there is
+grouping of the samples by both mouse and litter.
+
+<<network-setup>>=
+@ 
+
+<<ggnetwork, fig.height = 5>>=
+@ 
+
+\begin{figure}[H]
+<<ggnetwork-plot, fig.width=4, fig.height=3, fig.show = "hold">>=
+@ 
+\caption{A network created by thresholding the Jaccard dissimilarity
+  matrix. The colors represent which mouse the sample came from and
+  the shape represents which litter the mouse was in.}
+\label{fig:ggnetwork}
+\end{figure}
+
+\subsection*{Graph-based two-sample tests}
+
+Graph-based two-sample tests were introduced by Friedman and Rafsky
+\cite{friedman1979multivariate} as a generalization of the
+Wald-Wolfowitz runs test. They proposed the use of a minimum spanning tree (MST)
+based on the distances between the samples, and then counting the number
+of edges on the tree that were between samples in different
+groups. It is not necessary to use an MST,
+graphs made by linking nearest neighbors
+\cite{schilling1986multivariate} or  distance thresholding can also
+be input. No matter what graph we build between the samples, we can
+approximate a null distribution by permuting the labels of the nodes of the graph.
+
+\subsubsection*{MST and Jaccard}
+
+We first perform a test using an MST with Jaccard dissimilarity. We
+want to know whether the two litters 
+(\Robject{family\_relationship}) come from the same
+distribution. Since there is a grouping in the data by individual
+(\Robject{host\_subject\_id}), we can't simply permute all the
+labels, we need to maintain this nested structure -- this is what the
+\Robject{grouping} argument does. Here we permute the
+\Robject{family\_relationship} labels but keep the
+\Robject{host\_subject\_id} structure intact.
+
+This test has a small $p$-value, and we reject the null hypothesis
+that the two samples come from the same distribution. From the plot of
+the minimum spanning tree in Figure \ref{fig:mst-plot}, we see by eye that
+the samples group by litter more than we would expect by chance.
+
+<<mst>>=
+@ 
+
+\begin{figure}[H]
+<<mst-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+@
+\caption{The graph and permutation histogram obtained from the minimal
+  spanning tree with Jaccard similarity.}
+\label{fig:mst-plot}
+\end{figure}
+
+\subsubsection*{Nearest neighbors and Jaccard}
+
+The $k$-nearest neighbors graph is obtained by putting an edge between
+two samples whenever one of them is in the set of $k$-nearest
+neighbors of the other. We see from Figure \ref{fig:knn-1-plot} that
+if a pair of samples has an edge between them in the nearest neighbor
+graph, they are overwhelmingly likely to be in the same litter.
+
+<<knn-1>>=
+@
+
+\begin{figure}[H]
+<<knn-1-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+@
+\caption{The graph and permutation histogram obtained from a
+  nearest-neighbor graph with Jaccard similarity.}
+\label{fig:knn-1-plot}
+\end{figure}
+
+\subsubsection*{Two-nearest neighbors and Bray-Curtis}
+We can compute the analogous test with two-nearest neighbors and the
+Bray-Curtis dissimilarity. The results are in figure
+\ref{fig:knn-2-plot}.
+
+<<knn-2>>=
+@
+
+\begin{figure}[H]
+<<knn-2-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+@
+\caption{The graph and permutation histogram obtained from a
+  two nearest-neighbor graph with Jaccard similarity.}
+\label{fig:knn-2-plot}
+\end{figure}
+
+\subsubsection*{Distance threshold and Bray-Curtis}
+
+Another way of making a graph between samples is to threshold the
+distance matrix, this is called a geometric graph \cite{Penrose2003}.
+The testing function lets the user supply an absolute distance
+threshold; alternatively, it can find a distance threshold
+such that there are a prespecified number of edges in the graph. Below
+we use a distance threshold so that there are 720 edges in the
+graph, or twice as many edges as there are samples. Heuristically, the
+graph we obtain isn't as good, because there are many singletons. This
+reduces power, and so if the thresholded graph has this many
+singletons it is better to either modify the threshold or consider a
+MST or k-nearest neighbors graph.
+
+<<threshold-720>>=
+@ 
+
+\begin{figure}[H]
+<<threshold-720-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+@
+\caption{Testing using a Bray-Curtis distance thresholded graph.}
+\label{fig:threshold-720-plot}
+\end{figure}
+
+Then we can try a similar procedure with an increased number of edges to see what happens.
+
+<<threshold-2000>>=
+@ 
+
+\begin{figure}[H]
+<<threshold-2000-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+@
+\caption{The analogue to Figure \ref{fig:threshold-720-plot}, but with a
+  less stringent criterion for declaring edges.}
+\label{fig:threshold-2000-plot}
+\end{figure}
+
+
+
+\subsection*{Linear modeling}
+
+It is often of interest to evaluate the degree to which microbial community diversity
+reflects characteristics of the environment from which it
+was sampled. Unlike ordination, the purpose of this analysis is not to
+develop a representation of many microbes with respect
+to sample characteristics; rather, it is to describe how a single
+measure of overall community structure\footnote{In particular, it need
+  not be limited to diversity -- defining univariate measures of
+  community stability is also common, for example.} is associated with
+sample characteristics. This is a somewhat simpler statistical goal,
+and can be addressed through linear modeling, for which there are a
+range of approaches in R. As an example, we will used a mixed-effects
+model to study the relationship between mouse microbial community
+diversity and the age and litter variables that have been our focus so
+far. This choice was motivated by the observation that younger
+mice have noticeably lower Shannon diversities, but that different
+mice have different baseline diversities. The mixed-effects model is a
+starting point for formalizing this observation.
+
+We first compute the Shannon diversity associated with each sample
+and join it with sample annotation.
+
+<<lm-get-alpha-diversity>>=
+@
+
+We use the \CRANpkg{nlme} to estimate coefficients
+for this mixed-effects model.
+
+<<lm-age>>=
+@
+
+To interpret the results, we compute the prediction intervals for each
+mouse by age bin combination. These are displayed 
+in Figure \ref{fig:lm-fitted-plot}. The intervals reflect the slight
+shift in average diversity across ages, but the wide intervals
+emphasize that more samples would be needed before this observation
+can be confirmed.
+
+<<lm-prediction-intervals>>=
+@
+
+\begin{figure}[H]
+<<lm-fitted-plot, fig.height = 4, fig.width = 5>>=
+@
+\label{fig:lm-fitted-plot}
+\caption{Each point represents the Shannon diversity at one timepoint
+  for a mouse; each panel is a different mouse. The timepoints have
+  been split into three bins, according to the mices' age. The
+  prediction intervals obtained from mixed-effects modeling are
+  overlaid.}
+\end{figure}
+
+\subsection*{Hierarchical multiple testing}
+
+Hypothesis testing can be used to identify individual microbes whose
+abundance relates to sample variables of interest. A standard approach
+is to compute a test statistic for each microbe individually,
+measuring its association with sample characteristics, and then
+jointly adjust $p$-values to ensure a False Discovery Rate upper bound. This
+can be accomplished through the Benjamini-Hochberg
+procedure, for example \cite{BH:1995}. However, this procedure does not exploit
+any structure among the tested hypotheses -- for example, it is
+likely that if one Ruminococcus species is strongly associated with
+age, then others are as well. To integrate this information,
+\cite{benjamini2003hierarchical,
+  benjamini2014selective} proposed a hierarchical testing procedure,
+where taxonomic groups are only tested if higher levels are
+found to be be associated. In the case where many related species have
+a slight signal, this pooling of information can increase power.
+
+We apply this method to test the association between microbial abundance
+and age. This provides a complementary view of the
+earlier analyses, identifying individual microbes that are
+responsible for the differences between young and old mice.
+
+We digress briefly from hierarchical testing to describe an
+alternative form of count normalization. Rather than working with the
+logged data as in our earlier analysis, we consider a
+variance stabilizing transformation introduced by \cite{LoveDESeq2}
+for RNA-seq data and in \cite{mcmurdie2014} for 16S rRNA generated count data
+and available in the \BioCpkg{DESeq2} package. The two transformations
+yield similar sets of significant microbes. One difference is that,
+after accounting for size factors, the histogram of row sums for DESeq is
+ more spread out in the lower values, refer to Figure \ref{fig:deseq-vis}.
+ This is the motivation of using such a transformation, although for
+ high abundance counts, it is equivalent to the log, for lower and mid range abundances it does not crush the data and yields more powerful results.
+ The code below illustrates the mechanics of computing \BioCpkg{DESeq2}'s
+variance stabilizing transformation on a \BioCpkg{phyloseq} object.
+
+<<deseq-transform, eval =T>>=
+@ 
+
+\begin{figure}
+<<deseq-vis>>=
+@ 
+\label{fig:deseq-vis}
+\caption{The histogram on the top gives the total DESeq2 transformed
+  abundance within each sample. The bottom histogram is the same as
+  that in Figure \ref{fig:preprocessing-setup}, and is included to
+  facilitate comparison.}
+\end{figure}
+
+We use the \CRANpkg{structSSI} to perform the hierarchical
+testing \cite{sankaran2014structssi}. For more convenient printing, we
+first shorten the names of each microbe.
+
+<<structssi-shorten-names>>=
+@
+
+Unlike standard multiple hypothesis testing, the hierarchical testing
+procedure needs univariate tests for each higher-level taxonomic
+group, not just every microbe. A helper function,
+\Rfunction{treePValues}, is available for this; it expects an edgelist
+encoding parent-child relationships, with the first row specifying the
+root node.
+
+<<structssi-unadjp, eval =T>>=
+@
+
+We can now correct $p$-value using the hierarchical testing
+procedure. The test results are guaranteed to control several
+variants of FDR control, but at different levels; we defer
+details to \cite{benjamini2003hierarchical, benjamini2014selective,
+  sankaran2014structssi}.
+
+<<structssi-test>>=
+@
+
+\begin{figure}
+  \centering
+  \includegraphics[scale=0.4]{analysisfigure/structssi-screenshot.png}
+  \caption{A screenshot of a subtree with many differentially abundant
+    microbes, as determined by the hierarchical testing
+    procedure. Currently the user is hovering over the node associated
+    with microbe GCGAG.33; this causes the adjusted $p$-value (0.0295)
+    to appear.}
+  \label{fig:structssi-hfdr}
+\end{figure}
+
+The plot opens in a new browser -- a static screenshot of a subtree is
+displayed in Figure \ref{fig:structssi-hfdr}. Nodes are shaded
+according to $p$-values, from blue to orange, representing the
+strongest to weakest associations. Grey nodes were never
+tested, to focus power on more promising subtrees. Scanning the full
+tree, it becomes clear that the association between age group and
+microbe abundance is present in only a few isolated taxonomic
+groups, but that it is quite strong in those groups. To give context
+to these results, we can retrieve the taxonomic identity of the
+rejected hypotheses.
+
+<<structssi-tax>>=
+@
+
+It seems that the most strongly associated microbes all belong to
+family \emph{Lachnospiraceae}, which is consistent with the random forest
+results in Section \ref{sec:supervised-learning}.
+
+\subsection*{Multitable techniques}
+
+Many microbiome studies attempt to quantify variation in the
+microbial, genomic, and metabolic measurements across different
+experimental conditions. As a result, it is common to perform multiple
+assays on the same biological samples and ask what features -- microbes,
+genes, or metabolites, for example -- are associated with different sample
+conditions. There are many ways to approach these questions, which to
+apply depends on the study's focus.
+
+Here, we will focus on one specific workflow that uses sparse
+Canonical Correlation Analysis (sparse CCA), a method well-suited to
+both exploratory comparisons between samples and the identification of
+features with interesting variation. We will use an implementation
+from the  \CRANpkg{PMA} \cite{witten2009pma}.
+
+Since the mouse data used above included only a single table, we use a
+new data set, collected by the study
+\cite{kashyap2013genetically}. There are two tables here, one for
+microbes and another with metabolites. 12 samples were obtained, each
+with measurements at 637 m/z values and 20,609 OTUs; however, about
+96\% of the entries of the microbial abundance table are exactly
+zero. The code below retrieves this data.
+
+<<multitable-setup>>=
+@
+
+Our preprocessing mirrors that done for the mouse data. We first
+filter down to microbes and metabolites of interest, removing those that
+are zero across many samples. Then, we transform them to weaken the
+heavy tails.
+
+<<multitable-filtering>>=
+@
+
+We can now apply sparse CCA. This method compares sets of
+features across high-dimensional data tables, where there may be
+more measured features than samples. In the process, it chooses a
+subset of available features that capture the most covariance -- these
+are the features that reflect signals present across multiple
+tables. We then apply PCA to this selected subset of features. In this
+sense, we use sparse CCA as a screening procedure, rather than as an
+ordination method.
+
+Our implementation is below. The parameters \Robject{penaltyx} and
+\Robject{penaltyz} are sparsity penalties. Larger values of
+\Robject{penaltyx} will result in fewer selected  microbes, similarly
+\Robject{penaltyz} modulates the number of selected metabolites. We
+tune them manually to facilitate subsequent interpretation -- we
+generally prefer more sparsity than the default parameters would
+provide.
+
+<<multitable-sparse-cca>>=
+@
+
+With these parameters, 5 microbes and 15 metabolites have been
+selected, based on their ability to explain covariation between
+tables. Further, these 20 features result in a correlation of
+0.974 between the two tables. We interpret this
+to mean that the microbial and metabolomic data reflect similar
+underlying signals, and that these signals can be approximated well by
+the 20 selected features. Be wary of the correlation value, however,
+since the scores are far from the usual bivariate normal cloud.
+Further, note that it is possible that other subsets of features could
+explain the data just as well -- sparse CCA has minimized redundancy
+across features, but makes no guarantee that these are the ``true''
+features in any sense.
+
+Nonetheless, we can still use these 20 features to compress
+information from the two tables without much loss. To relate the
+recovered metabolites and OTUs to characteristics of the samples on
+which they were measured, we use them as input to an ordinary PCA.
+
+<<multitable-plug-in-pca>>=
+@
+
+Figure \ref{fig:multitable-interpret-pca} displays a PCA {\em triplot}, where we show
+different types of samples and the multidomain features (Metabolites and OTUs).
+This allows comparison across the measured samples -- triangles for
+Knockout and circles for wild type --
+and characterizes the influence the different features  -- diamonds with
+text labels. For example, we see that the main variation in the data
+is across PD and ST samples, which correspond to the different diets. 
+Further, large values of 15 of the features are associated with ST
+status, while small values for 5 of them indicate PD status. The
+advantage of the sparse CCA screening is now clear -- we  can display
+most of the variation across samples using a relatively simple plot,
+and can avoid plotting the hundreds of additional points that would be
+needed to display all of the features.
+
+\begin{figure}[H]
+<<multitable-interpret-pca, fig.height = 2.4, fig.width = 8>>=
+@
+\caption{A PCA triplot produced from the CCA selected features in from muliple data types (metabolites and OTUs).}
+\label{fig:multitable-interpret-pca}
+\end{figure}
