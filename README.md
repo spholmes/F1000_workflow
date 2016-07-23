@@ -1,3 +1,5 @@
+
+
 # Bioconductor Workflow for Microbiome Data Analysis: from raw reads to community analyses.
 
 ## Generate output documents
@@ -9,9 +11,16 @@ library("knitr")
 knit("PartIIphyloseq.rnw")
 ```
 
-The three .rnw files can be processed independently.
+The three Rnw files can be executed independently. 
 
-The bioinformatics processing is fairly time-consuming, and takes 3-6 hours on modern laptops. In addition, an internet connection is required for the bioinformatics section, as the fastq files being processed are not included in this repository but must be downloaded.
+`PartIdada.rnw` is the read/bioinformatics processing and is fairly time-consuming, (it can take 3-6 hours on modern laptops). In addition, an internet connection is required, as the fastq files being processed are not included in this repository but must be downloaded.
+
+
+`PartIIphyloseq.rnw` performs a few analyses with phyloseq and is quite fast.
+
+`PartIIIanalysis.rnw` performs all the statistical analyses and the machine learning components can take about 10
+minutes.
+
 
 ## Run interactively
 
