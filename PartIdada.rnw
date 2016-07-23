@@ -17,7 +17,7 @@ read_chunk(file.path("src", "bioinformatics.R"))
 <<init>>=
 @ 
 
-The data we will process here are highly-overlapping Illumina Miseq
+The data we will analyze here are highly-overlapping Illumina Miseq
 2x250 amplicon sequences from the V4 region of the 16S gene \cite{Kozich2013}.
 These 360 fecal samples were collected from 12 mice longitudinally over the
 first year of life, to investigate the development and 
@@ -62,11 +62,12 @@ paired reads jointly, i.e. both reads must pass the filter for the pair to pass.
 @ 
 
 \subsection*{Infer sequence variants}
-After filtering, the typical amplicon bioinformatics workflows cluster
+After filtering, the typical amplicon bioinformatics workflow clusters
 sequencing reads into operational taxonomic units (OTUs): groups of
 sequencing reads that differ by less than a fixed dissimilarity
 threshhold. Here we instead use the high-resolution DADA2
-method to to infer ribosomal sequence variants (RSVs) without any fixed threshhold, thereby 
+method to to infer ribosomal sequence variants (RSVs) exactly, without imposing
+any arbitrary threshhold, and thereby 
 resolving variants that differ by as little as one nucleotide \cite{dada2}.
 
 The sequence data is imported into R from demultiplexed fastq files (i.e. one
@@ -77,7 +78,7 @@ name the resulting `derep-class` objects by their sample name.
 @ 
 
 The DADA2 method relies on a parameterized model of substitution
-errors in order to distinguish sequencing errors from real biological
+errors to distinguish sequencing errors from real biological
 variation. Because error rates can (and often do) vary substantially
 between sequencing runs and PCR protocols, the model parameters can be
 discovered from the data itself using a form of unsupervised learning
@@ -105,8 +106,8 @@ points) and the fitted error rates (black lines).
 \end{figure}
 
 The DADA2 sequence inference method can run in two different modes:
-Independent inference by sample (`pool=FALSE`), and pooled inference from the 
-set of sequencing reads combined from all samples (`pool=TRUE`). Independent
+Independent inference by sample (`pool=FALSE`), and inference from the
+pooled sequencing reads from all samples (`pool=TRUE`). Independent
 inference has the advantage that computation time is linear
 in the number of samples, and memory requirements are flat with the
 number of samples. This allows scaling out to datasets of almost unlimited
@@ -115,9 +116,9 @@ intractable for datasets of tens of millions of reads.
 However, pooling improves the detection of rare variants that
 were seen just once or twice in an individual sample but many times across
 all samples. As this dataset is not particularly large, we perform pooled 
-inference. Of potential interest, the 
+inference. *Of potential interest, the 
 \href{https://github.com/benjjneb/dada2}{development version of dada2}
-has added multithreading, which can substantially speed this step.
+has added multithreading, which can substantially speed this step.*
 
 <<dada>>=
 @ 
@@ -149,8 +150,9 @@ stitching together two more abundant sequences.
 <<chimeras>>=
 @ 
 
-Typically a substantial fraction of inferred sequence variants, but
-only a small fraction of all reads, are found to be chimeric. That is
+Although exact numbers vary substantially by experimental condition, it is
+typical that chimeras comprise a substantial fraction of inferred sequence variants,
+but only a small fraction of all reads. That is
 what is observed here: 1503 of 1892 sequence variants were chimeric, but
 these only represented 10\% of all reads.
 
@@ -161,7 +163,7 @@ rRNA gene is the ability to taxonomically classify the sequence
 variants. The \href{http://bioconductor.org/packages/dada2}{dada2}
 package implements the naive Bayesian classifier method for this
 purpose \cite{wang2007naive}. This classifier compares sequence
-variants to a training set of classified sequences. Here we use the
+variants to a training set of classified sequences, and here we use the
 RDP v14 training set \cite{cole2009rdp}.
 
 <<tax>>=
