@@ -6,7 +6,7 @@
 
 ## ---- init ----
 .cran_packages  <-  c("ggplot2", "gridExtra")
-.bioc_packages  <- c("dada2", "msa", "phyloseq")
+.bioc_packages  <- c("dada2", "phyloseq", "DECIPHER", "phangorn")
 
 .inst <- .cran_packages %in% installed.packages()
 if(any(!.inst)) {
@@ -26,11 +26,17 @@ set.seed(100)
 # you have to change this (unless we put the data on dropbox and
 # automatically download
 
-## ---- paths ----
-#download.file("http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar",
-#              destfile = file.path(miseq_path, "StabilityNoMetaG.tar"))
-#system(paste0("tar -xvf ", file.path(miseq_path, "StabilityNoMetaG.tar"),
-#              " -C", miseq_path, "/"))
+## ---- files ----
+miseq_path <- file.path("data", "MiSeq_SOP")
+filt_path <- file.path("data", "filtered")
+
+if(!file_test("-d", miseq_path)) {
+  dir.create(miseq_path)
+  download.file("http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar",
+               destfile = file.path(miseq_path, "StabilityNoMetaG.tar"))
+  system(paste0("tar -xvf ", file.path(miseq_path, "StabilityNoMetaG.tar"),
+               " -C ", miseq_path, "/"))
+}
 
 fns <- sort(list.files(miseq_path, full.names = TRUE))
 fnFs <- fns[grepl("R1", fns)]
@@ -42,18 +48,21 @@ for(i in ii) { print(plotQualityProfile(fnFs[i]) + ggtitle("Fwd")) }
 for(i in ii) { print(plotQualityProfile(fnRs[i]) + ggtitle("Rev")) }
 
 ## ---- filter ----
+if(!file_test("-d", filt_path)) dir.create(filt_path)
+filtFs <- file.path(filt_path, basename(fnFs))
+filtRs <- file.path(filt_path, basename(fnRs))
 for(i in seq_along(fnFs)) {
   fastqPairedFilter(c(fnFs[[i]], fnRs[[i]]),
-                    c(fnFs[[i]], fnRs[[i]]),
+                    c(filtFs[[i]], filtRs[[i]]),
                     trimLeft=10, truncLen=c(245, 160),
                     maxN=0, maxEE=2, truncQ=2,
                     compress=TRUE)
 }
 
 ## ---- derep ----
-derepFs <- derepFastq(fnFs)
-derepRs <- derepFastq(fnRs)
-sam.names <- sapply(strsplit(basename(fnFs), "_"), `[`, 1)
+derepFs <- derepFastq(filtFs)
+derepRs <- derepFastq(filtRs)
+sam.names <- sapply(strsplit(basename(filtFs), "_"), `[`, 1)
 names(derepFs) <- sam.names
 names(derepRs) <- sam.names
 
@@ -86,11 +95,11 @@ colnames(taxtab) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")
 ## ---- msa ----
 seqs <- getSequences(seqtab)
 names(seqs) <- seqs # This propagates to the tip labels of the tree
-mult <- msa(seqs, method="ClustalW", type="dna", order="input")
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, terminalGap=0)
+staggered <- StaggerAlignment(alignment)
 
 ## ---- tree ----
-library("phangorn")
-phang.align <- as.phyDat(mult, type="DNA", names=getSequence(seqtab))
+phang.align <- phyDat(as(staggered, "matrix"), type="DNA")
 dm <- dist.ml(phang.align) 
 treeNJ <- NJ(dm) # Note, tip order != sequence order
 fit = pml(treeNJ, data=phang.align)

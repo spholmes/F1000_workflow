@@ -23,14 +23,17 @@ the general workflow presented here can be adapted to the multitable
 setting.
 
 <<overall-setup, message = FALSE, warning = FALSE, echo=FALSE>>=
-source(file.path("src/analysis-setup.R"))
 library("knitr")
-src <- list.files("src", full.names = TRUE)
-read_src <- sapply(src, read_chunk)
+src.filenames <- c("analysis-setup.R", "preprocessing.R", "ordinations.R", "supervised.R",
+               "graph-testing.R", "linear-modeling.R", "hierarchical-test.R", "multitable.R")
+read_src <- sapply(file.path("src", src.filenames), read_chunk)
 opts_chunk$set(fig.width = 6, fig.height = 4, warning = FALSE, message = FALSE, cache = TRUE, 
                fig.align = "center", cache.path = "cache-analysis/", fig.path = "analysisfigure/")
 options(digits = 3, width = 80,prompt = " ", continue = " ")
 @
+
+<<init-analysis>>=
+@ 
 
 
 \subsubsection*{Preprocessing}

@@ -3,7 +3,7 @@
 # File description -------------------------------------------------------------
 # This sets up the analysis section for the F1000 paper.
 
-## ---- install-packages ----
+## ---- init-analysis ----
 .cran_packages  <-  c("knitr", "phyloseqGraphTest", "phyloseq", "shiny",
                     "miniUI", "caret", "pls", "e1071", "ggplot2", "randomForest",
                     "vegan", "plyr", "dplyr", "ggrepel", "nlme",

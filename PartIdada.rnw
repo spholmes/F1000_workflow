@@ -2,7 +2,7 @@
 This section demonstrates
 the ``full stack'' of amplicon bioinformatics: construction of the
 sample-by-sequence feature table from the raw reads, assignment of 
-taxonomy, and creation of the phylogenetic tree relating the sample
+taxonomy, and creation of a phylogenetic tree relating the sample
 sequences. 
 
 First we load the necessary packages.
@@ -11,9 +11,7 @@ First we load the necessary packages.
 library("knitr")
 library("BiocStyle")
 opts_chunk$set(cache = FALSE,fig.path="dadafigure/")
-base_dir <- "/Users/susan/Phyloseq/BiocWorklow"
-miseq_path <- file.path(base_dir, "data", "MiSeq_SOP")
-read_chunk(file.path(base_dir, "src", "bioinformatics.R"))
+read_chunk(file.path("src", "bioinformatics.R"))
 @ 
 
 <<init>>=
@@ -24,10 +22,10 @@ The data we will process here are highly-overlapping Illumina Miseq
 These 360 fecal samples were collected from 12 mice longitudinally over the
 first year of life, to investigate the development and 
 stabilization of the murine microbiome \cite{schloss2012stabilization}.
-These data can be downloaded from the following location:
+These data are downloaded from the following location:
 \url{http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar}. 
 
-<<paths>>=
+<<files>>=
 @ 
 
 \subsection*{Trim and Filter}
@@ -68,12 +66,12 @@ After filtering, the typical amplicon bioinformatics workflows cluster
 sequencing reads into operational taxonomic units (OTUs): groups of
 sequencing reads that differ by less than a fixed dissimilarity
 threshhold. Here we instead use the high-resolution DADA2
-method to to infer sequence variants without any fixed threshhold, thereby 
+method to to infer ribosomal sequence variants (RSVs) without any fixed threshhold, thereby 
 resolving variants that differ by as little as one nucleotide \cite{dada2}.
 
 The sequence data is imported into R from demultiplexed fastq files (i.e. one
 fastq for each sample) and simultaneously dereplicated to remove redundancy. We
-name the resulting `derep-class` objects by their sample.
+name the resulting `derep-class` objects by their sample name.
 
 <<derep>>=
 @ 
@@ -109,7 +107,7 @@ points) and the fitted error rates (black lines).
 The DADA2 sequence inference method can run in two different modes:
 Independent inference by sample (`pool=FALSE`), and pooled inference from the 
 set of sequencing reads combined from all samples (`pool=TRUE`). Independent
-inference has two major advantages: Computation time is linear
+inference has the advantage that computation time is linear
 in the number of samples, and memory requirements are flat with the
 number of samples. This allows scaling out to datasets of almost unlimited
 size. Pooled inference is more computationally taxing, and can become
@@ -117,14 +115,16 @@ intractable for datasets of tens of millions of reads.
 However, pooling improves the detection of rare variants that
 were seen just once or twice in an individual sample but many times across
 all samples. As this dataset is not particularly large, we perform pooled 
-inference.
+inference. Of potential interest, the 
+\href{https://github.com/benjjneb/dada2}{development version of dada2}
+has added multithreading, which can substantially speed this step.
 
 <<dada>>=
 @ 
 
-Sequence inference removed (nearly) all substitution and
-indel errors from the data. We now merge together the inferred forward 
-and reverse sequences, while removing paired sequences that do not perfectly
+The DADA2 sequence inference step removed (nearly) all substitution and
+indel errors from the data \cite{dada2}. We now merge together the inferred forward 
+and reverse sequences, removing paired sequences that do not perfectly
 overlap as a final control against residual errors.
 
 <<merge>>=
@@ -133,7 +133,7 @@ overlap as a final control against residual errors.
 \subsection*{Construct sequence table and remove chimeras}
 
 The DADA2 method produces a sequence table that is a higher-resolution
-analogue to the common "OTU table", i.e. a sample by sequence feature
+analogue of the common "OTU table", i.e. a sample by sequence feature
 table valued by the number of times each sequence was observed in each sample.
 
 <<seqtab>>=
@@ -143,7 +143,7 @@ Notably, chimeras have not yet been removed. The error model in the
 sequence inference algorithm does not include a chimera component, and
 therefore we expect this sequence table to include many chimeric sequences. 
 We now remove chimeric sequences by comparing each inferred sequence to the
-other sequences in the table, and removing those that can be reproduced by
+others in the table, and removing those that can be reproduced by
 stitching together two more abundant sequences.
 
 <<chimeras>>=
@@ -151,14 +151,14 @@ stitching together two more abundant sequences.
 
 Typically a substantial fraction of inferred sequence variants, but
 only a small fraction of all reads, are found to be chimeric. That is
-what is observed here: 1502 of 1892 sequence variants were chimeric, but
+what is observed here: 1503 of 1892 sequence variants were chimeric, but
 these only represented 10\% of all reads.
 
 \subsection*{Assign taxonomy}
 
 One of the benefits of using well-classified marker loci like the 16S
-rRNA gene is the ability to taxonomically classify the sequenced
-variants. The *[dada2](http://bioconductor.org/packages/dada2)*
+rRNA gene is the ability to taxonomically classify the sequence
+variants. The \href{http://bioconductor.org/packages/dada2}{dada2}
 package implements the naive Bayesian classifier method for this
 purpose \cite{wang2007naive}. This classifier compares sequence
 variants to a training set of classified sequences. Here we use the
@@ -167,9 +167,8 @@ RDP v14 training set \cite{cole2009rdp}.
 <<tax>>=
 @ 
 
-Training set {\tt fasta} formatted files for use with the
-\href{http://bioconductor.org/packages/dada2}{dada2} package are
-available for download at
+GreenGenes and Silva training set {\tt fasta} files formatted for the
+`assignTaxonomy` function are also available for download at
 \url{https://www.dropbox.com/sh/mfcivbudmc21cqt/AAB1l-AUM5uKvjrR33ct-cTXa?dl=0}.
 
 \subsection*{Construct phylogenetic tree}
@@ -178,7 +177,8 @@ analyses, especially the calculation of phylogeny-aware distances
 between microbial communities. The DADA2 sequence inference method is
 reference-free, so we must construct the phylogenetic tree relating
 the inferred sequence variants de novo. We begin by performing a
-multiple-alignment of the inferred sequences.
+multiple-alignment using the \Sexpr{Biocpkg("DECIPHER")} R package
+\cite{wright2015decipher}.
 
 <<msa>>=
 @ 
@@ -190,8 +190,6 @@ neighbor-joining tree as a starting point.
 
 <<tree>>=
 @ 
-
-This completes the amplicon bioinformatics portion of the workflow.
 
 \subsection*{Combine data into a phyloseq object}
 
