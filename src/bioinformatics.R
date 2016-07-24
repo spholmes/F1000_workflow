@@ -95,11 +95,10 @@ colnames(taxtab) <- c("Kingdom", "Phylum", "Class", "Order", "Family", "Genus")
 ## ---- msa ----
 seqs <- getSequences(seqtab)
 names(seqs) <- seqs # This propagates to the tip labels of the tree
-alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA, terminalGap=0)
-staggered <- StaggerAlignment(alignment)
+alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA)
 
 ## ---- tree ----
-phang.align <- phyDat(as(staggered, "matrix"), type="DNA")
+phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
 dm <- dist.ml(phang.align) 
 treeNJ <- NJ(dm) # Note, tip order != sequence order
 fit = pml(treeNJ, data=phang.align)
