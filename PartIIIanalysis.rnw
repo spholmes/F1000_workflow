@@ -450,7 +450,7 @@ graphs made by linking nearest neighbors
 be input. No matter what graph we build between the samples, we can
 approximate a null distribution by permuting the labels of the nodes of the graph.
 
-\subsubsection*{MST and Jaccard}
+\subsubsection*{MST}
 
 We first perform a test using an MST with Jaccard dissimilarity. We
 want to know whether the two litters 
@@ -478,7 +478,7 @@ the samples group by litter more than we would expect by chance.
 \label{fig:mst-plot}
 \end{figure}
 
-\subsubsection*{Nearest neighbors and Jaccard}
+\subsubsection*{Nearest neighbors}
 
 The $k$-nearest neighbors graph is obtained by putting an edge between
 two samples whenever one of them is in the set of $k$-nearest
@@ -497,23 +497,17 @@ graph, they are overwhelmingly likely to be in the same litter.
 \label{fig:knn-1-plot}
 \end{figure}
 
-\subsubsection*{Two-nearest neighbors and Bray-Curtis}
-We can compute the analogous test with two-nearest neighbors and the
-Bray-Curtis dissimilarity. The results are in figure
-\ref{fig:knn-2-plot}.
+We can also compute the analogous test with two-nearest neighbors and the
+Bray-Curtis dissimilarity. The results are not shown, but the code is
+given below. 
 
-<<knn-2>>=
+<<knn-2, eval=FALSE>>=
 @
 
-\begin{figure}[H]
-<<knn-2-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+<<knn-2-plot, eval=FALSE>>=
 @
-\caption{The graph and permutation histogram obtained from a
-  two nearest-neighbor graph with Jaccard similarity.}
-\label{fig:knn-2-plot}
-\end{figure}
 
-\subsubsection*{Distance threshold and Bray-Curtis}
+\subsubsection*{Distance threshold}
 
 Another way of making a graph between samples is to threshold the
 distance matrix, this is called a geometric graph \cite{Penrose2003}.
@@ -537,19 +531,14 @@ MST or k-nearest neighbors graph.
 \label{fig:threshold-720-plot}
 \end{figure}
 
-Then we can try a similar procedure with an increased number of edges to see what happens.
+Then we can try a similar procedure with an increased number of edges
+to see what happens (code given below but output not shown).
 
-<<threshold-2000>>=
+<<threshold-2000, eval=FALSE>>=
 @ 
 
-\begin{figure}[H]
-<<threshold-2000-plot, fig.width=3.5, fig.height=2.8, fig.show = "hold">>=
+<<threshold-2000-plot, eval = FALSE>>=
 @
-\caption{The analogue to Figure \ref{fig:threshold-720-plot}, but with a
-  less stringent criterion for declaring edges.}
-\label{fig:threshold-2000-plot}
-\end{figure}
-
 
 
 \subsection*{Linear modeling}
