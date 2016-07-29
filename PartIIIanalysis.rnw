@@ -24,6 +24,7 @@ setting.
 
 <<overall-setup, message = FALSE, warning = FALSE, echo=FALSE>>=
 library("knitr")
+source("src/analysis-setup.R")
 src.filenames <- c("analysis-setup.R", "preprocessing.R", "ordinations.R", "supervised.R",
                "graph-testing.R", "linear-modeling.R", "hierarchical-test.R", "multitable.R")
 read_src <- sapply(file.path("src", src.filenames), read_chunk)
