@@ -104,7 +104,8 @@ the phyloseq package.
 The object just loaded into the R session in this workflow
 is  suitable for this graphical interaction with Shiny-phyloseq.
 
-\subsubsection*{Prevalence Filtering}
+
+\subsection*{Filtering}
 
 \BioCpkg{phyloseq} 
 provides useful tools for filtering, subsetting, and agglomerating taxa --
@@ -122,73 +123,208 @@ a step that should probably be considered essential for datasets constructed
 via heuristic OTU-clustering methods,
 which are notoriously prone to generating spurious taxa.
 
+\subsubsection*{Taxonomic Filtering}
 
-<<prevalencefilter>>=
-# Define prevalence of each taxa
-# (in how many samples did each taxa appear at least once)
-prev0 = apply(X = otu_table(ps0), 
-              MARGIN = ifelse(taxa_are_rows(ps0), yes = 1, no = 2),
-              FUN = function(x){sum(x > 0)})
-prevdf = data.frame(Prevalence = prev0,
+In many biological settings, the set of all organisms from all samples are well-represented in the available taxonomic reference database. 
+When (and only when) this is the case, it is reasonable or even advisable to filter taxonomic features
+for which a high-rank taxonomy could not be assigned.
+Such ambiguous features in this setting are almost always sequence artifacts that don't exist in nature.
+It should be obvious that such a filter is not appropriate for samples from poorly characterized or novel specimens, at least until the possibility of taxonomic novelty can be satisfactorily rejected.
+Phylum is a useful taxonomic rank to consider using for this purpose, but others may work effectively for your data.
+
+To begin, create a table of read counts for each Phylum present in the dataset.
+
+<<taxfilter0>>=
+# Show available ranks in the dataset
+rank_names(ps0)
+# Create table, number of features for each phyla
+table(tax_table(ps0)[, "Phylum"], exclude = NULL)
+@
+
+This shows a few phyla for which only one feature was observed.
+Those may be worth filtering, and we'll check that next.
+First, notice that in this case, six features were annotated with a Phylum of NA.
+These features are probably artifacts in a dataset like this,
+and should be removed first.
+
+The following ensures that features with ambiguous phylum annotation are removed.
+Note the flexibility in defining strings that should be considered ambiguous annotation.
+
+<<removeNAphyla>>=
+ps0 <- subset_taxa(ps0, !is.na(Phylum) & Phylum != c("", "uncharacterized"))
+@
+
+A useful next step is to explore feature \emph{prevalence} in the dataset,
+which we will define here as 
+the number of samples in which a taxa appears at least once.
+
+<<prevfilter0>>=
+# Compute prevalence of each feature, store as data.frame
+prevdf = apply(X = otu_table(ps0), 
+               MARGIN = ifelse(taxa_are_rows(ps0), yes = 1, no = 2),
+               FUN = function(x){sum(x > 0)})
+# Add taxonomy and total read counts to this data.frame
+prevdf = data.frame(Prevalence = prevdf,
                     TotalAbundance = taxa_sums(ps0),
                     tax_table(ps0))
-keepPhyla = table(prevdf$Phylum)[(table(prevdf$Phylum) >  5)]
-prevdf1 = subset(prevdf, Phylum %in% names(keepPhyla))
+@
+
+
+Are there phyla that are comprised of mostly low-prevalence features?
+Compute the total and average prevalences of the features in each phylum.
+
+<<>>=
+plyr::ddply(prevdf, "Phylum", function(df1){mean(df1$Prevalence)})
+plyr::ddply(prevdf, "Phylum", function(df1){sum(df1$Prevalence)})
+@
+
+Deinococcus-Thermus appeared in just over one percent of samples,
+and Fusobacteria appeared in just 2 samples total.
+In some cases it might be worthwhile to explore 
+these two phyla in more detail despite this
+(though probably not Fusobacteria's two samples).
+For the purposes of this example, though,
+they will be filtered from the dataset.
+
+
+<<taxfilter>>=
+# Define phyla to filter
+filterPhyla = c("Fusobacteria", "Deinococcus-Thermus")
+# Filter entries with unidentified Phylum.
+ps1 = subset_taxa(ps0, !Phylum %in% filterPhyla)
+ps1
+@
+
+
+\subsubsection*{Prevalence Filtering}
+
+The previous filtering steps are considered \emph{supervised},
+because they relied on prior information 
+that is external to this experiment
+(a taxonomic reference database).
+This next filtering step is completely \emph{unsupervised},
+relying only on the data in this experiment, 
+and a parameter that we will choose after exploring the data.
+Thus, this filtering step can be applied even in settings 
+where taxonomic annotation is unavailable or unreliable.
+
+First, explore the relationship of 
+prevalence and total read count
+for each feature. 
+Sometimes this reveals outliers that should probably be removed,
+and also provides insight into the ranges of either feature
+that might be useful.
+This aspect depends quite a lot on the experimental design
+and goals of the downstream inference,
+so keep these in mind. 
+It may even be the case that different types of downstream inference 
+require different choices here.
+There is no reason to expect ahead of time that
+a single filtering workflow is appropriate for all analysis.
+
+
+\begin{figure}[H]
+<<plotprevalence>>=
+# Subset to the remaining phyla
+prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
+# Plot prevalence
+ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0))) + 
+  # Include a guess for parameter, to see where it false
+  geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +
+  # Add the point layer
+  geom_point(size = 2, alpha = 0.7) +
+  # scale_y_log10() +
+  scale_x_log10() +
+  xlab("Total Abundance") + 
+  ylab("Prevalence [Frac. Samples]") + 
+  facet_wrap(~Phylum) +
+  ggtitle("Prevalence (as frac. of samples), v. Total Counts")
+@
+\caption{Taxa prevalence v. total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
+\end{figure}
+
+Sometimes a natural separation in the dataset reveals itself,
+or at least, a conservative choice that is in a stable region
+for which small changes to the choice would have 
+minor or no effect on the biological interpreation (stability).
+Here no natural separation is immediately evident,
+but it looks like we might reasonably define a prevalence threshold 
+in a range of zero to 10 percent or so. 
+Take care that this choice does not introduce bias 
+into your downstream analysis.
+
+The following uses five percent of all samples 
+as the prevalence threshold.
+
+<<prevalencefilter>>=
 # Define prevalence threshold as 5% of total samples
 prevalenceThreshold = 0.05 * nsamples(ps0)
 prevalenceThreshold
 # Execute prevalence filter, using `prune_taxa()` function
-ps1 = prune_taxa((prev0 > prevalenceThreshold), ps0)
-ps1
-# Filter entries with unidentified Phylum.
-ps2 = subset_taxa(ps1, Phylum %in% names(keepPhyla))
-ps2
+keepTaxa = rownames(prevdf1)[(prevdf1$Prevalence >= prevalenceThreshold)]
+ps2 = prune_taxa(keepTaxa, ps0)
 @ 
 
-\begin{figure}[H]
-<<plotprevalence, fig.width=7.5, fig.height=3.5>>=
-ggplot(prevdf1, aes(TotalAbundance, Prevalence, color = Phylum)) + 
-  geom_hline(yintercept = prevalenceThreshold, alpha = 0.5, linetype = 2) +
-  geom_point(size = 2, alpha = 0.7) +
-  scale_y_log10() + scale_x_log10() +
-  xlab("Total Abundance") + 
-  facet_wrap(~Phylum) 
-@ 
-\caption{Taxa prevalence v. total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
-\end{figure}
 
-\subsubsection*{Agglomerate closely related taxa}
+\subsection*{Agglomerate taxa}
 
-For some experimental questions, 
-it is useful to agglomerate closely-related taxa.
-In this subsection we explore two separate ways 
-in which closely-related taxa can be grouped together
-as a single feature in the phyloseq data object.
-Note that this is only helpful 
-if a biological phenomenon of interest
-actually occurs at the chosen level of agglomeration,
-in which case the grouping-together of these features
-can increase statistical power.
+When there is known to be a lot of 
+species or sub-species functional redundancy
+in a microbial community, 
+it might be useful to agglomerate the data features 
+corresponding to closely related taxa.
+Ideally we would know the functional redundancies perfectly ahead of time,
+in which case we would agglomerate taxa using those defined relationships
+and the \Rfunction{merge\_taxa()} function in phyloseq. 
+That kind of exquisite functional data is usually not available,
+and different pairs of microbes will have different sets of overlapping functions,
+complicating the matter of defining appropriate grouping criteria.
 
-<<glom>>=
+While not necessarily the most useful or functionally-accurate 
+criteria for grouping microbial features
+(sometimes far from accurate), 
+taxonomic agglomeration has the advantage of being much easier to define ahead of time.
+This is because taxonomies are usually defined 
+with a comparatively simple tree-like graph structure
+that has a fixed number of internal nodes, called ``ranks''.
+This structure is simple enough for the phyloseq package
+to represent taxonomies as table of taxonomy labels.
+Taxonomic agglomeration groups all the ``leaves'' in the hierarchy
+that descend from the user-prescribed agglomerating rank.
+
+The following example code shows how one 
+would combine all features that descend from the same genus.
+
+<<taxglom>>=
 ## ---- glom ----
 # Taxonomic agglomeration
-# How many genera are present after filtering?
-taxGlomRank = "Genus"
-length(get_taxa_unique(ps2, taxonomic.rank = taxGlomRank))
-ps3 = tax_glom(ps2, taxrank = taxGlomRank)
-# Phylogenetic agglomeration
-# How many genera are present after filtering?
+# How many genera would be present after filtering?
+length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
+ps3 = tax_glom(ps2, "Genus", NArm = TRUE)
+@
+
+If taxonomy is not available or not reliable,
+tree-based agglomeration is a "taxonomy-free" 
+alternative to combine data features corresponding to closely-related taxa.
+In this case, rather than taxonomic rank, the user specifies
+a tree height corresponding to the phylogenetic distance between features
+that should define their grouping. 
+This is very similar to ``OTU Clustering'',
+except that in many OTU Clustering algorithms the sequence distance being used
+does not have the same (or any) evolutionary definition.
+
+<<tipglom>>=
 h1 = 0.4
 ps4 = tip_glom(ps2, h = h1)
 @
 
-Use phyloseq's \Robject{plot\_tree()} 
-to plot tree of original filtered data,
+Here phyloseq's \Robject{plot\_tree()} function 
+compare the original unfiltered data,
 the tree after taxonoic agglomeration,
 and the tree after phylogenetic agglomeration.
-Save these as separate plot objects, and then render them together
-on one plot using \Robject{gridExtra::grid.arrange}.
+These are stored as separate plot objects, 
+then rendered together in one combined graphic
+using \Robject{gridExtra::grid.arrange}.
 
 <<plotglomprep>>=
 multiPlotTitleTextSize = 8
@@ -200,7 +336,7 @@ p2tree = plot_tree(ps2,
 p3tree = plot_tree(ps3,
                    method = "treeonly", 
                    ladderize = "left",
-                   title = paste0("tax_glom(..., taxrank='", taxGlomRank, "')")) +
+                   title = paste0("tax_glom(..., taxrank='", "Genus", "')")) +
   theme(plot.title = element_text(size = multiPlotTitleTextSize))
 p4tree = plot_tree(ps4, 
                    method = "treeonly", 
@@ -219,7 +355,7 @@ grid.arrange(nrow = 1, p2tree, p3tree, p4tree)
 \end{figure}
 
 
-\subsubsection*{Abundance value transformation}
+\subsection*{Abundance value transformation}
 
 It is usually necessary to transform microbiome count data
 to account for differences in library size, variance, scale, etc.
@@ -246,19 +382,23 @@ in scale and distribution of the abundance values
 in our phyloseq object before and after transformation.
 
 <<abundancetransformation>>=
-plot_abundance = function(physeq, ylabn = "",
+plot_abundance = function(physeq,
+                          title = "",
                           Facet = "Order", 
                           Color = "Phylum"){
   mphyseq = psmelt(physeq)
   mphyseq <- subset(mphyseq, Abundance > 0)
   ggplot(data = mphyseq, 
-         mapping = aes_string(x = "sex", y = "Abundance",
-                              color = Color, fill = Color)) + 
+         mapping = aes_string(x = "sex", 
+                              y = "Abundance",
+                              color = Color,
+                              fill = Color)) + 
     geom_violin(fill = NA) +
-    geom_point(size = 1, alpha = 0.3,
+    geom_point(size = 1,
+               alpha = 0.3,
                position = position_jitter(width = 0.3)) +
-    facet_wrap(facets = Facet) + ylab(ylabn) +
-    scale_y_log10() 
+    facet_wrap(facets = Facet) +
+    scale_y_log10() #+ ggtitle(title)
 }
 @
 
@@ -278,13 +418,15 @@ ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
 Now plot the abundance values before and after transformation.
 
 \begin{figure}[H]
-<<abundancetransformation3, fig.show="hold">>=
-plot_abundance(ps3,"Original Abundances")
-plot_abundance(ps3ra,"Relative Abundances")
+<<abundancetransformation3>>=
+plotBefore = plot_abundance(ps3,"")
+plotAfter = plot_abundance(ps3ra,"")
+# Combine each plot into one graphic.
+grid.arrange(nrow = 2,  plotBefore, plotAfter)
 @
 \caption{
 Comparison of original abundances (top panel) 
-and relative abundances (lower), both are shown on a log scale.
+and relative abundances (lower).
 }
 \end{figure}
 
@@ -314,3 +456,4 @@ was the result of a mixture of two different genera,
 with the typical \emph{Lactobacillus} relative abundance 
 much larger than \emph{Streptococcus}.}
 \end{figure}
+
