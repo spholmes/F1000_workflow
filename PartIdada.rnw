@@ -36,10 +36,18 @@ trimming parameters serve as a starting point, no two datasets are
 identical and therefore it is always worth inspecting the quality of the
 data before proceeding.
 
-\begin{figure}
-<<profile>>=
+<<profile,fig.show="hide">>=
 @ 
-\caption{Forward Error Profiles}
+\begin{figure}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-1} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-2} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-3} 
+\\
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-4} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-5} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-6} 
+\caption{Forward and Reverse Error Profiles, the mean is in green, the median the solid orange line
+and the quartiles are the dotted orange lines.}
 \label{fig:r profile1}
 \end{figure}
 
@@ -95,11 +103,14 @@ large) subset of the data.
 
 In order to verify that the error rates have been reasonably
 well-estimated, we inspect the fit between the observed error rates (black
-points) and the fitted error rates (black lines).
+points) and the fitted error rates (black lines) in Figure \ref{fig:errorprofile1}.
 
-\begin{figure}
-<<plot-rates>>=
+
+<<plot-rates,fig.show="hide">>=
 @ 
+\begin{figure}
+\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-1} 
+\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-2} 
 \caption{Forward and Reverse Read Error Profiles, showing the
   frequencies of each type of nucleotide transition as a function of quality.}\label{fig:r
   errorprofile1}
@@ -179,15 +190,15 @@ analyses, especially the calculation of phylogeny-aware distances
 between microbial communities. The DADA2 sequence inference method is
 reference-free, so we must construct the phylogenetic tree relating
 the inferred sequence variants de novo. We begin by performing a
-multiple-alignment using the \Sexpr{Biocpkg("DECIPHER")} R package
+multiple-alignment using the \Biocpkg{DECIPHER} R package
 \cite{wright2015decipher}.
 
-<<msa>>=
+<<msa, output=FALSE,message=FALSE>>=
 @ 
 
-The \Sexpr{CRANpkg("phangorn")} R package is then used to construct a
+The \CRANpkg{phangorn} R package is then used to construct a
 phylogenetic tree. Here we first construct a neighbor-joining tree,
-and then fit a GTR+G+I maximum likelihood tree using the
+and then fit a GTR+G+I (Generalized time-reversible with Gamma rate variation) maximum likelihood tree using the
 neighbor-joining tree as a starting point.
 
 <<tree>>=
@@ -195,7 +206,7 @@ neighbor-joining tree as a starting point.
 
 \subsection*{Combine data into a phyloseq object}
 
-The \Sexpr{Biocpkg("phyloseq")} package
+The \Biocpkg{phyloseq} package
 organizes and synthesizes the different data types from a typical
 amplicon sequencing experiment into a single data object that can be
 easily manipulated. The last bit of information needed is the sample
