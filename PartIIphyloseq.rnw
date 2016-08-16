@@ -151,7 +151,7 @@ The following ensures that features with ambiguous phylum annotation are removed
 Note the flexibility in defining strings that should be considered ambiguous annotation.
 
 <<removeNAphyla>>=
-ps0 <- subset_taxa(ps0, !is.na(Phylum) & Phylum != c("", "uncharacterized"))
+ps0 <- subset_taxa(ps0, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 @
 
 A useful next step is to explore feature \emph{prevalence} in the dataset,
@@ -386,7 +386,9 @@ plot_abundance = function(physeq,
                           title = "",
                           Facet = "Order", 
                           Color = "Phylum"){
-  mphyseq = psmelt(physeq)
+  # Arbitrary subset, based on Phylum, for plotting
+  p1f = subset_taxa(physeq, Phylum %in% c("Firmicutes"))
+  mphyseq = psmelt(p1f)
   mphyseq <- subset(mphyseq, Abundance > 0)
   ggplot(data = mphyseq, 
          mapping = aes_string(x = "sex", 
