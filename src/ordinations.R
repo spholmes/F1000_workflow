@@ -132,7 +132,7 @@ ggplot() +
   labs(x = sprintf("Axis1 [%s%% variance]", round(evals_prop[1], 2)),
        y = sprintf("Axis2 [%s%% variance]", round(evals_prop[2], 2))) +
   scale_color_brewer(palette = "Set2") +
-  coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])) +
+  coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])*0.33) +
   theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))
 
 ## ---- ccpna-plot-litter ----
@@ -147,5 +147,5 @@ ggplot() +
   labs(x = sprintf("Axis1 [%s%% variance]", round(evals_prop[1], 2)),
        y = sprintf("Axis2 [%s%% variance]", round(evals_prop[2], 2))) +
   scale_color_brewer(palette = "Set2") +
-  coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])) +
+  coord_fixed(sqrt(ps_ccpna$CCA$eig[2] / ps_ccpna$CCA$eig[1])*0.45  ) +
   theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)))

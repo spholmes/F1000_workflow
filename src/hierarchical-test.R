@@ -12,7 +12,7 @@ ps_dds <- estimateSizeFactors(ps_dds)
 ps_dds <- estimateDispersions(ps_dds)
 abund <- getVarianceStabilizedData(ps_dds)
 
-## ---- structssi-shorten-names ---- 
+## ---- structssi-shorten-names ----
 short_names <- substr(rownames(abund), 1, 5)%>%
   make.names(unique = TRUE)
 rownames(abund) <- short_names
@@ -45,6 +45,7 @@ summary(hfdr_res)
 plot(hfdr_res, height = 5000) # opens in a browser
 
 ## ---- structssi-tax ----
+options(width=100)
 tax <- tax_table(pslog)[, c("Family", "Genus")] %>%
   data.frame()
 tax$seq <- short_names
@@ -52,5 +53,4 @@ tax$seq <- short_names
 hfdr_res@p.vals$seq <- rownames(hfdr_res@p.vals)
 tax %>%
   left_join(hfdr_res@p.vals) %>%
-  arrange(adjp) %>%
-  head(10)
+  arrange(adjp) %>% head(10)

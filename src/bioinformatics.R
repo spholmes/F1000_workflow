@@ -99,7 +99,7 @@ alignment <- AlignSeqs(DNAStringSet(seqs), anchor=NA)
 
 ## ---- tree ----
 phang.align <- phyDat(as(alignment, "matrix"), type="DNA")
-dm <- dist.ml(phang.align) 
+dm <- dist.ml(phang.align)
 treeNJ <- NJ(dm) # Note, tip order != sequence order
 fit = pml(treeNJ, data=phang.align)
 fitGTR <- update(fit, k=4, inv=0.2)
@@ -112,7 +112,7 @@ detach("package:phangorn", unload=TRUE)
 mimarks_path <- "data/MIMARKS_Data_combined.csv"
 samdf <- read.csv(mimarks_path, header=TRUE)
 samdf$SampleID <- paste0(gsub("00", "", samdf$host_subject_id), "D", samdf$age-21)
-samdf <- samdf[!duplicated(samdf$SampleID),] # Remove dupicate entries for reverse reads
+samdf <- samdf[!duplicated(samdf$SampleID),] # Remove duplicate entries for reverse reads
 rownames(seqtab) <- gsub("124", "125", rownames(seqtab)) # Fixing an odd discrepancy
 all(rownames(seqtab) %in% samdf$SampleID) # TRUE
 
@@ -121,7 +121,5 @@ keep.cols <- c("collection_date", "biome", "target_gene", "target_subfragment", 
 samdf <- samdf[rownames(seqtab), keep.cols]
 
 ## ---- phyloseq ----
-ps <- phyloseq(tax_table(taxtab), 
-               sample_data(samdf), 
-               otu_table(seqtab, taxa_are_rows = FALSE),
-               phy_tree(fitGTR$tree))
+ps <- phyloseq(tax_table(taxtab), sample_data(samdf),
+               otu_table(seqtab, taxa_are_rows = FALSE), phy_tree(fitGTR$tree))

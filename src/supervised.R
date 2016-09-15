@@ -70,7 +70,6 @@ ggplot(rf_prox) +
 as.vector(tax_table(ps)[which.max(importance(rfFit$finalModel)), c("Family", "Genus")])
 impOtu <- as.vector(otu_table(pslog)[,which.max(importance(rfFit$finalModel))])
 maxImpDF <- data.frame(sample_data(pslog), abund = impOtu)
-ggplot(maxImpDF) +
-  geom_histogram(aes(x = abund)) +
+ggplot(maxImpDF) +   geom_histogram(aes(x = abund)) +
   facet_grid(age2 ~ .) +
-  labs(x = "Abundance of discriminative microbe", y = "Number of samples")
+  labs(x = "Abundance of discriminative bacteria", y = "Number of samples")

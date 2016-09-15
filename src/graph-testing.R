@@ -23,61 +23,57 @@ ggplot(net, aes(x = x, y = y, xend = xend, yend = yend), layout = "fruchtermanre
   guides(col = guide_legend(override.aes = list(size = .25)))
 
 ## ---- mst -----------------------------------------------------------
-gt <- graph_perm_test(ps, "family_relationship",
-                      grouping = "host_subject_id",
+gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "jaccard", type = "mst")
 gt$pval
 
 ## ---- mst-plot ------------------------------------------------------
-plot_test_network(gt) +
-  theme(legend.text = element_text(size = 8),
+plotNet1=plot_test_network(gt) + theme(legend.text = element_text(size = 8),
         legend.title = element_text(size = 9))
-plot_permutations(gt)
+plotPerm1=plot_permutations(gt)
+grid.arrange(ncol = 2,  plotNet1, plotPerm1)
 
 ## ---- knn-1 ---------------------------------------------------------
-gt <- graph_perm_test(ps, "family_relationship",
-                      grouping = "host_subject_id",
+gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "jaccard", type = "knn", knn = 1)
-gt$pval
 
 ## ---- knn-1-plot ----------------------------------------------------
-plot_test_network(gt) +
-  theme(legend.text = element_text(size = 8),
+plotNet2=plot_test_network(gt) + theme(legend.text = element_text(size = 8),
         legend.title = element_text(size = 9))
-plot_permutations(gt)
+plotPerm2=plot_permutations(gt)
+grid.arrange(ncol = 2,  plotNet2, plotPerm2)
+
 
 ## ---- knn-2 ---------------------------------------------------------
 gt <- graph_perm_test(ps, "family_relationship",
                       grouping = "host_subject_id",
                       distance = "bray", type = "knn", knn = 2)
-gt$pval
 
 ## ---- knn-2-plot ----------------------------------------------------
-plot_test_network(gt) +
-  theme(legend.text = element_text(size = 8),
-        legend.title = element_text(size = 9))
-plot_permutations(gt)
+#plot_test_network(gt) +
+#  theme(legend.text = element_text(size = 8),
+#        legend.title = element_text(size = 9))
+#plot_permutations(gt)
 
 ## ---- threshold-720 -------------------------------------------------
 gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "bray", type = "threshold.nedges", nedges = 720,
                       keep.isolates = FALSE)
-gt$pval
+
 
 ## ---- threshold-720-plot --------------------------------------------
-plot_test_network(gt) +
-  theme(legend.text = element_text(size = 8),
+plotNet3= plot_test_network(gt) + theme(legend.text = element_text(size = 8),
         legend.title = element_text(size = 9))
-plot_permutations(gt)
+plotPerm3=plot_permutations(gt)
+grid.arrange(ncol = 2,  plotNet3, plotPerm3)
 
 ## ---- threshold-2000-------------------------------------------------
 gt <- graph_perm_test(ps, "family_relationship", grouping = "host_subject_id",
                       distance = "bray", type = "threshold.nedges", nedges = 2000,
                       keep.isolates = FALSE)
-gt$pval
 
 ## ---- threshold-2000-plot -------------------------------------------
-plot_test_network(gt) +
-  theme(legend.text = element_text(size = 8),
-        legend.title = element_text(size = 9))
-plot_permutations(gt)
+#plot_test_network(gt) +
+#  theme(legend.text = element_text(size = 8),
+#        legend.title = element_text(size = 9))
+#plot_permutations(gt)

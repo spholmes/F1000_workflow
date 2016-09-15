@@ -38,22 +38,18 @@ and linked directly at
 %\subsection*{Load Packages}
 
 <<joeysetupknitr, cache=FALSE, include=FALSE>>=
-library("knitr")
-opts_chunk$set(cache = FALSE, fig.path="phyloseqfigure/",
-               fig.width = 5, fig.height = 3,
-               warning = FALSE, fig.align = "center", message = FALSE)
+##For later version
 library("BiocStyle")
 @
 <<xtrasetupknitr, cache=FALSE, echo=FALSE>>=
+options(wdith=85)
+options(digits=3)
 opts_chunk$set(cache = FALSE, fig.path="phyloseqfigure/",
                fig.width = 6, fig.height = 3,
                warning = FALSE, fig.align = "center", message = FALSE)
 @
 <<joeysetup, echo=FALSE>>=
-library("phyloseq")
 library("ggplot2")
-library("gridExtra")
-# Kris' ggplot2
 theme_set(theme_bw())
 min_theme <- theme_update(panel.border = element_blank(),
                           panel.grid = element_blank(),
@@ -81,14 +77,13 @@ More complete details can be found on the
 In the previous section the results of \BioCpkg{dada2} sequence processing
 were organized into a phyloseq object.
 This object was also saved in R-native serialized RDS format.
-We will re-load this here for completeness.
+We will re-load this here for completeness as the initial object \Robject{p0}.
 
 <<>>=
 library("phyloseq")
-library("ggplot2")
 library("gridExtra")
-ps0 = readRDS("data/ps.rds")
-ps0
+ps = readRDS("data/ps.rds")
+ps
 @
 
 
@@ -136,9 +131,9 @@ To begin, create a table of read counts for each Phylum present in the dataset.
 
 <<taxfilter0>>=
 # Show available ranks in the dataset
-rank_names(ps0)
+rank_names(ps)
 # Create table, number of features for each phyla
-table(tax_table(ps0)[, "Phylum"], exclude = NULL)
+table(tax_table(ps)[, "Phylum"], exclude = NULL)
 @
 
 This shows a few phyla for which only one feature was observed.
@@ -151,7 +146,7 @@ The following ensures that features with ambiguous phylum annotation are also re
 Note the flexibility in defining strings that should be considered ambiguous annotation.
 
 <<removeNAphyla>>=
-ps0 <- subset_taxa(ps0, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
+ps0 <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 @
 
 A useful next step is to explore feature \emph{prevalence} in the dataset,
@@ -174,8 +169,7 @@ Are there phyla that are comprised of mostly low-prevalence features?
 Compute the total and average prevalences of the features in each phylum.
 
 <<>>=
-plyr::ddply(prevdf, "Phylum", function(df1){mean(df1$Prevalence)})
-plyr::ddply(prevdf, "Phylum", function(df1){sum(df1$Prevalence)})
+plyr::ddply(prevdf, "Phylum", function(df1){cbind(mean(df1$Prevalence),sum(df1$Prevalence))})
 @
 
 Deinococcus-Thermus appeared in just over one percent of samples,
@@ -227,22 +221,15 @@ a single filtering workflow is appropriate for all analysis.
 <<plotprevalence>>=
 # Subset to the remaining phyla
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
-# Plot prevalence
-ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0)),color="Phylum") +
-  # Include a guess for parameter, to see where it false
-  geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +
-  # Add the point layer
-  geom_point(size = 2, alpha = 0.7) +
-  # scale_y_log10() +
-  scale_x_log10() +
-  xlab("Total Abundance") +
-  ylab("Prevalence [Frac. Samples]") +
-  facet_wrap(~Phylum) +
+ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
+  # Include a guess for parameter
+  geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +  geom_point(size = 2, alpha = 0.7) +
+  scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
+  facet_wrap(~Phylum) + theme(legend.position="none") +
   ggtitle("Prevalence (as frac. of samples), v. Total Counts")
 @
 \caption{Taxa prevalence v. total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
 \end{figure}
-
 Sometimes a natural separation in the dataset reveals itself,
 or at least, a conservative choice that is in a stable region
 for which small changes to the choice would have
@@ -290,14 +277,13 @@ that has a fixed number of internal nodes, called ``ranks''.
 This structure is simple enough for the phyloseq package
 to represent taxonomies as table of taxonomy labels.
 Taxonomic agglomeration groups all the ``leaves'' in the hierarchy
-that descend from the user-prescribed agglomerating rank.
+that descend from the user-prescribed agglomerating rank, this is sometimes called
+`glomming'.
 
 The following example code shows how one
 would combine all features that descend from the same genus.
 
 <<taxglom>>=
-## ---- glom ----
-# Taxonomic agglomeration
 # How many genera would be present after filtering?
 length(get_taxa_unique(ps2, taxonomic.rank = "Genus"))
 ps3 = tax_glom(ps2, "Genus", NArm = TRUE)
@@ -382,25 +368,19 @@ in scale and distribution of the abundance values
 in our phyloseq object before and after transformation.
 
 <<abundancetransformation>>=
-plot_abundance = function(physeq,
-                          title = "",
-                          Facet = "Order",
-                          Color = "Phylum"){
+plot_abundance = function(physeq,title = "",
+                          Facet = "Order", Color = "Phylum"){
   # Arbitrary subset, based on Phylum, for plotting
   p1f = subset_taxa(physeq, Phylum %in% c("Firmicutes"))
   mphyseq = psmelt(p1f)
-  mphyseq = subset(mphyseq, Abundance > 0)
-  ggplot(data = mphyseq,
-         mapping = aes_string(x = "sex",
-                              y = "Abundance",
-                              color = Color,
-                              fill = Color)) +
+  mphyseq <- subset(mphyseq, Abundance > 0)
+  ggplot(data = mphyseq, mapping = aes_string(x = "sex",y = "Abundance",
+                              color = Color, fill = Color)) +
     geom_violin(fill = NA) +
-    geom_point(size = 1,
-               alpha = 0.3,
+    geom_point(size = 1, alpha = 0.3,
                position = position_jitter(width = 0.3)) +
-    facet_wrap(facets = Facet) +
-    scale_y_log10() #+ ggtitle(title)
+    facet_wrap(facets = Facet) + scale_y_log10()+
+    theme(legend.position="none")
 }
 @
 
@@ -420,7 +400,7 @@ ps3ra = transform_sample_counts(ps3, function(x){x / sum(x)})
 Now plot the abundance values before and after transformation.
 
 \begin{figure}[H]
-<<abundancetransformation3>>=
+<<abundancetransformation3, fig.height=4, fig.width=8.5>>=
 plotBefore = plot_abundance(ps3,"")
 plotAfter = plot_abundance(ps3ra,"")
 # Combine each plot into one graphic.

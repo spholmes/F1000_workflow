@@ -45,6 +45,7 @@ min_theme <- theme_update(panel.border = element_blank(),
 
 ## ---- misc-setup ----
 set.seed(10)
+options(width=100)
 
 ## ---- get-raw-data ----
 raw_data <- function() {
@@ -55,17 +56,14 @@ raw_data <- function() {
 ## ---- get-preprocessed-data ----
 preprocessed_data <- function() {
   ps <- raw_data()
-
   ps <- prune_samples(rowSums(otu_table(ps)) > 1000, ps)
   sample_data(ps)$librarysize <- log10(rowSums(otu_table(ps)))
   sample_data(ps)$age_binned <- cut(sample_data(ps)$age, breaks = c(0, 100, 200, 400))
-
   ps0 <- ps
   pslog <- transform_sample_counts(ps, function(x) log(1 + x))
-
   # detected in preprocessing.R
   outliers <- c("F5D165", "F6D165", "M3D175", "M4D175", "M5D175", "M6D175")
-  ps <- prune_samples(!(sample_names(ps0) %in% outliers), ps0)
+  ps0 <- prune_samples(!(sample_names(ps0) %in% outliers), ps0)
   pslog <- prune_samples(!(sample_names(pslog) %in% outliers), pslog)
   list(ps0 = ps0, ps = ps, pslog = pslog)
 }
@@ -76,7 +74,6 @@ setup_example <- function(pkgs) {
   all_obj <- ls(envir = .GlobalEnv)
   all_obj <- setdiff(all_obj, c("raw_data", "preprocessed_data", "setup_example"))
   rm(list = all_obj, envir = .GlobalEnv)
-
   # add packages and data to workspace
   sapply(pkgs, require, character = TRUE)
   # slight problem with phylo object class...
