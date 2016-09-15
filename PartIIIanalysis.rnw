@@ -84,12 +84,24 @@ in the entire data set that this RSV has such a high relative
 abundance -- the rest of the time it is below 20\%. In particular, its
 diversity is by far the lowest of all the samples.
 
-\begin{figure}[H]
-<<outlier-analyze, fig.width=4, fig.height=2>>=
+
+<<outlier-analyze, fig.width=8, fig.height=4, fig.show="hide">>=
 @
+\begin{figure}[H]
+\includegraphics[height=0.2\linewidth]{analysisfigure/outlier-analyze-1}
 \caption{The outlier samples are dominated by a single RSV.}
 \label{fig:outlier-analysize}
 \end{figure}
+
+\subsubsection*{Aspect ratio of ordination plots}
+In the above plots, you may have noticed as did the reviewers of the first version of the paper, that
+the maps are not presented as square representations as is often the case in
+standard PCoA and PCA plots in the literature.
+
+The reason for this is that as we are trying to represent the distances between samplesas faitfully as possible
+we have to take into account that the second eigenvalue is always smaller
+than the first, sometimes considerably so, thus we normalize the axis ration to the relevant eigenvalue
+ratios.
 
 \subsection*{Different Ordination Projections}
 
@@ -400,7 +412,7 @@ days and much higher from age 100 to 400 days.
 <<caret-rf-importance, fig.height=2, fig.width=7, fig.show="hide">>=
 @
 \begin{figure}[H]
-\includegraphics[width=1.1\linewidth]{analysisfigure/caret-rf-importance-1}
+\includegraphics[width=\linewidth]{analysisfigure/caret-rf-importance-1}
 \caption{A bacteria in genus \emph{Roseburia} becomes much more abundant in
   the 100 to 400 day bin.}
 \label{fig:caret-rf-importance}
@@ -795,6 +807,8 @@ needed to display all of the features.
 \begin{figure}[H]
 <<multitable-interpret-pca, fig.height = 2.4, fig.width = 8>>=
 @
-\caption{A PCA triplot produced from the CCA selected features in from muliple data types (metabolites and OTUs).}
+\caption{A PCA triplot produced from the CCA selected features in from muliple data types (metabolites and OTUs).
+Note that we have departed from our convention of fixing the aspect ratio here as the second axis
+represents very little of the variability and the plot would actually become unreadble.}
 \label{fig:multitable-interpret-pca}
 \end{figure}

@@ -42,7 +42,7 @@ and linked directly at
 library("BiocStyle")
 @
 <<xtrasetupknitr, cache=FALSE, echo=FALSE>>=
-options(wdith=85)
+options(wdith=88)
 options(digits=3)
 opts_chunk$set(cache = FALSE, fig.path="phyloseqfigure/",
                fig.width = 6, fig.height = 3,

@@ -117,7 +117,9 @@ rownames(seqtab) <- gsub("124", "125", rownames(seqtab)) # Fixing an odd discrep
 all(rownames(seqtab) %in% samdf$SampleID) # TRUE
 
 rownames(samdf) <- samdf$SampleID
-keep.cols <- c("collection_date", "biome", "target_gene", "target_subfragment", "host_common_name", "host_subject_id", "age", "sex", "body_product", "tot_mass", "diet", "family_relationship", "genotype", "SampleID")
+keep.cols <- c("collection_date", "biome", "target_gene", "target_subfragment",
+"host_common_name", "host_subject_id", "age", "sex", "body_product", "tot_mass",
+"diet", "family_relationship", "genotype", "SampleID")
 samdf <- samdf[rownames(seqtab), keep.cols]
 
 ## ---- phyloseq ----
