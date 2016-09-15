@@ -291,8 +291,12 @@ which have not been published previously.
 
 
 \section*{Data availability} % Optional - only if novel data or analyses are included
-Intermediary data for the analyses are made available at the Stanford
-digital repository permanent url for this paper: http://purl.stanford.edu/wh250nn9648.
+Intermediary data for the analyses are made available
+both on GitHub at
+\url{https://github.com/spholmes/F1000_workflow}
+at the Stanford
+digital repository permanent url for this paper: \\
+\url{http://purl.stanford.edu/wh250nn9648}.
 All other data have been previously published and the links are included in
 the paper.
 
