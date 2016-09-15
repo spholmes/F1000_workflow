@@ -1,9 +1,9 @@
 \subsection*{Amplicon bioinformatics: from raw reads to tables}
 This section demonstrates
 the ``full stack'' of amplicon bioinformatics: construction of the
-sample-by-sequence feature table from the raw reads, assignment of 
+sample-by-sequence feature table from the raw reads, assignment of
 taxonomy, and creation of a phylogenetic tree relating the sample
-sequences. 
+sequences.
 
 First we load the necessary packages.
 
@@ -19,8 +19,7 @@ First we load the necessary packages.
 \end{knitrout}
 
 \begin{knitrout}
-\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}
-\begin{kframe}
+\definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{.cran_packages}  \hlkwb{<-}  \hlkwd{c}\hlstd{(}\hlstr{"ggplot2"}\hlstd{,} \hlstr{"gridExtra"}\hlstd{)}
 \hlstd{.bioc_packages}  \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"dada2"}\hlstd{,} \hlstr{"phyloseq"}\hlstd{,} \hlstr{"DECIPHER"}\hlstd{,} \hlstr{"phangorn"}\hlstd{)}
@@ -38,7 +37,13 @@ First we load the necessary packages.
 
 \hlcom{# Load packages into session, and print package version}
 \hlkwd{sapply}\hlstd{(}\hlkwd{c}\hlstd{(.cran_packages, .bioc_packages), require,} \hlkwc{character.only} \hlstd{=} \hlnum{TRUE}\hlstd{)}
+\end{alltt}
+
+\begin{alltt}
 \hlkwd{set.seed}\hlstd{(}\hlnum{100}\hlstd{)}
+
+\hlcom{# you have to change this (unless we put the data on dropbox and}
+\hlcom{# automatically download}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
@@ -46,13 +51,11 @@ First we load the necessary packages.
 The data we will analyze here are highly-overlapping Illumina Miseq
 2x250 amplicon sequences from the V4 region of the 16S gene \cite{Kozich2013}.
 These 360 fecal samples were collected from 12 mice longitudinally over the
-first year of life, to investigate the development and 
+first year of life, to investigate the development and
 stabilization of the murine microbiome \cite{schloss2012stabilization}.
-These data were downloaded from the following location:
-\url{http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar}, they were
-decompressed 
-and placed in the directory {\tt data/MiSeq\_SOP}. 
-You will need to set your directory accordingly.
+These data are downloaded from the following location:
+\url{http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar}.
+
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -82,36 +85,30 @@ trimming parameters serve as a starting point, no two datasets are
 identical and therefore it is always worth inspecting the quality of the
 data before proceeding.
 
-
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{ii} \hlkwb{<-} \hlkwd{sample}\hlstd{(}\hlkwd{length}\hlstd{(fnFs),} \hlnum{3}\hlstd{)}
 \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlstd{ii) \{} \hlkwd{print}\hlstd{(}\hlkwd{plotQualityProfile}\hlstd{(fnFs[i])} \hlopt{+} \hlkwd{ggtitle}\hlstd{(}\hlstr{"Fwd"}\hlstd{)) \}}
-\end{alltt}
-\end{kframe}
-
-\begin{kframe}\begin{alltt}
 \hlkwa{for}\hlstd{(i} \hlkwa{in} \hlstd{ii) \{} \hlkwd{print}\hlstd{(}\hlkwd{plotQualityProfile}\hlstd{(fnRs[i])} \hlopt{+} \hlkwd{ggtitle}\hlstd{(}\hlstr{"Rev"}\hlstd{)) \}}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-
 \begin{figure}
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-1} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-2} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-3} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-1}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-2}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-3}
 \\
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-4} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-5} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-6} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-4}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-5}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-6}
 \caption{Forward and Reverse Error Profiles, the mean is in green, the median the solid orange line
 and the quartiles are the dotted orange lines.}
 \label{fig:r profile1}
 \end{figure}
 
 Most Illumina sequencing data shows a trend of decreasing average quality
-towards the end of sequencing reads. 
+towards the end of sequencing reads.
 
 Here, the forward reads maintain high quality throughout, while the quality
 of the reverse reads drops significantly at about position 160. Therefore,
@@ -148,7 +145,7 @@ sequencing reads into operational taxonomic units (OTUs): groups of
 sequencing reads that differ by less than a fixed dissimilarity
 threshhold. Here we instead use the high-resolution DADA2
 method to to infer ribosomal sequence variants (RSVs) exactly, without imposing
-any arbitrary threshhold, and thereby 
+any arbitrary threshhold, and thereby
 resolving variants that differ by as little as one nucleotide \cite{dada2}.
 
 The sequence data is imported into R from demultiplexed fastq files (i.e. one
@@ -173,7 +170,7 @@ variation. Because error rates can (and often do) vary substantially
 between sequencing runs and PCR protocols, the model parameters can be
 discovered from the data itself using a form of unsupervised learning
 in which sample inference is alternated with parameter estimation
-until both are jointly consistent. 
+until both are jointly consistent.
 
 Parameter learning is computationally intensive, as it requires
 multiple iterations of the sequence inference algorithm, and therefore
@@ -190,7 +187,8 @@ large) subset of the data.
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# Initial error matrix unspecified. Error rates will be initialized to the maximum possible estimate from this data.}}\begin{verbatim}
 ## Initializing error rates to maximum possible estimate.
 ## Sample 1 - 7084 reads in 1955 unique sequences.
-## .......
+## ..........
+## Sample 40 - 4191 reads in 922 unique sequences.
 ## Convergence after  5  rounds.
 \end{verbatim}
 \begin{alltt}
@@ -201,7 +199,7 @@ large) subset of the data.
 {\ttfamily\noindent\itshape\color{messagecolor}{\#\# Initial error matrix unspecified. Error rates will be initialized to the maximum possible estimate from this data.}}\begin{verbatim}
 ## Initializing error rates to maximum possible estimate.
 ## Sample 1 - 7084 reads in 1548 unique sequences.
-## ......................
+## .....................
 ## Sample 40 - 4191 reads in 999 unique sequences.
 ## Convergence after  6  rounds.
 \end{verbatim}
@@ -217,19 +215,16 @@ points) and the fitted error rates (black lines) in Figure \ref{fig:errorprofile
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlkwd{plotErrors}\hlstd{(ddF)}
-\end{alltt}
-\end{kframe}
-\begin{kframe}\begin{alltt}
 \hlkwd{plotErrors}\hlstd{(ddR)}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
 \begin{figure}
-\includegraphics[width=0.48\maxwidth]{dadafigure/plot-rates-1} 
-\includegraphics[width=0.48\maxwidth]{dadafigure/plot-rates-2} 
+\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-1}
+\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-2}
 \caption{Forward and Reverse Read Error Profiles, showing the
-  frequencies of each type of nucleotide transition as a function of quality.}
-  \label{fig:errorprofile1}
+  frequencies of each type of nucleotide transition as a function of quality.}\label{fig:r
+  errorprofile1}
 \end{figure}
 
 The DADA2 sequence inference method can run in two different modes:
@@ -242,8 +237,8 @@ size. Pooled inference is more computationally taxing, and can become
 intractable for datasets of tens of millions of reads.
 However, pooling improves the detection of rare variants that
 were seen just once or twice in an individual sample but many times across
-all samples. As this dataset is not particularly large, we perform pooled 
-inference. *Of potential interest, the 
+all samples. As this dataset is not particularly large, we perform pooled
+inference. *Of potential interest, the
 \href{https://github.com/benjjneb/dada2}{development version of dada2}
 has added multithreading, which can substantially speed this step.*
 
@@ -265,7 +260,7 @@ has added multithreading, which can substantially speed this step.*
 \end{knitrout}
 
 The DADA2 sequence inference step removed (nearly) all substitution and
-indel errors from the data \cite{dada2}. We now merge together the inferred forward 
+indel errors from the data \cite{dada2}. We now merge together the inferred forward
 and reverse sequences, removing paired sequences that do not perfectly
 overlap as a final control against residual errors.
 
@@ -293,7 +288,7 @@ table valued by the number of times each sequence was observed in each sample.
 
 Notably, chimeras have not yet been removed. The error model in the
 sequence inference algorithm does not include a chimera component, and
-therefore we expect this sequence table to include many chimeric sequences. 
+therefore we expect this sequence table to include many chimeric sequences.
 We now remove chimeric sequences by comparing each inferred sequence to the
 others in the table, and removing those that can be reproduced by
 stitching together two more abundant sequences.
@@ -342,7 +337,7 @@ analyses, especially the calculation of phylogeny-aware distances
 between microbial communities. The DADA2 sequence inference method is
 reference-free, so we must construct the phylogenetic tree relating
 the inferred sequence variants de novo. We begin by performing a
-multiple-alignment using the *[DECIPHER](http://bioconductor.org/packages/DECIPHER)* R package
+multiple-alignment using the {\tt DECIPHER} R package
 \cite{wright2015decipher}.
 
 \begin{knitrout}
@@ -352,19 +347,10 @@ multiple-alignment using the *[DECIPHER](http://bioconductor.org/packages/DECIPH
 \hlkwd{names}\hlstd{(seqs)} \hlkwb{<-} \hlstd{seqs} \hlcom{# This propagates to the tip labels of the tree}
 \hlstd{alignment} \hlkwb{<-} \hlkwd{AlignSeqs}\hlstd{(}\hlkwd{DNAStringSet}\hlstd{(seqs),} \hlkwc{anchor}\hlstd{=}\hlnum{NA}\hlstd{)}
 \end{alltt}
-\begin{verbatim}
-## Determining distance matrix based on shared 5-mers:
-## Clustering into groups by similarity:
-## Aligning Sequences:
-## Determining distance matrix based on alignment:
-## Reclustering into groups by similarity:
-## Realigning Sequences:
-## Refining the alignment:
-\end{verbatim}
 \end{kframe}
 \end{knitrout}
 
-We used the *[phangorn](http://cran.fhcrc.org/web/packages/phangorn/index.html)* R package  to construct a
+The \CRANpkg{phangorn} R package is then used to construct a
 phylogenetic tree. Here we first construct a neighbor-joining tree,
 and then fit a GTR+G+I (Generalized time-reversible with Gamma rate variation) maximum likelihood tree using the
 neighbor-joining tree as a starting point.
@@ -390,11 +376,11 @@ neighbor-joining tree as a starting point.
 
 \subsection*{Combine data into a phyloseq object}
 
-The *[phyloseq](http://bioconductor.org/packages/phyloseq)* package
+The \BioCpkg{phyloseq} package
 organizes and synthesizes the different data types from a typical
 amplicon sequencing experiment into a single data object that can be
 easily manipulated. The last bit of information needed is the sample
-data contained in a \texttt{.csv} file. 
+data contained in a \texttt{.csv} file.
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -402,7 +388,7 @@ data contained in a \texttt{.csv} file.
 \hlstd{mimarks_path} \hlkwb{<-} \hlstr{"data/MIMARKS_Data_combined.csv"}
 \hlstd{samdf} \hlkwb{<-} \hlkwd{read.csv}\hlstd{(mimarks_path,} \hlkwc{header}\hlstd{=}\hlnum{TRUE}\hlstd{)}
 \hlstd{samdf}\hlopt{$}\hlstd{SampleID} \hlkwb{<-} \hlkwd{paste0}\hlstd{(}\hlkwd{gsub}\hlstd{(}\hlstr{"00"}\hlstd{,} \hlstr{""}\hlstd{, samdf}\hlopt{$}\hlstd{host_subject_id),} \hlstr{"D"}\hlstd{, samdf}\hlopt{$}\hlstd{age}\hlopt{-}\hlnum{21}\hlstd{)}
-\hlstd{samdf} \hlkwb{<-} \hlstd{samdf[}\hlopt{!}\hlkwd{duplicated}\hlstd{(samdf}\hlopt{$}\hlstd{SampleID),]} \hlcom{# Remove dupicate entries for reverse reads}
+\hlstd{samdf} \hlkwb{<-} \hlstd{samdf[}\hlopt{!}\hlkwd{duplicated}\hlstd{(samdf}\hlopt{$}\hlstd{SampleID),]} \hlcom{# Remove duplicate entries for reverse reads}
 \hlkwd{rownames}\hlstd{(seqtab)} \hlkwb{<-} \hlkwd{gsub}\hlstd{(}\hlstr{"124"}\hlstd{,} \hlstr{"125"}\hlstd{,} \hlkwd{rownames}\hlstd{(seqtab))} \hlcom{# Fixing an odd discrepancy}
 \hlkwd{all}\hlstd{(}\hlkwd{rownames}\hlstd{(seqtab)} \hlopt{%in%} \hlstd{samdf}\hlopt{$}\hlstd{SampleID)} \hlcom{# TRUE}
 \end{alltt}
@@ -411,7 +397,9 @@ data contained in a \texttt{.csv} file.
 \end{verbatim}
 \begin{alltt}
 \hlkwd{rownames}\hlstd{(samdf)} \hlkwb{<-} \hlstd{samdf}\hlopt{$}\hlstd{SampleID}
-\hlstd{keep.cols} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"collection_date"}\hlstd{,} \hlstr{"biome"}\hlstd{,} \hlstr{"target_gene"}\hlstd{,} \hlstr{"target_subfragment"}\hlstd{,} \hlstr{"host_common_name"}\hlstd{,} \hlstr{"host_subject_id"}\hlstd{,} \hlstr{"age"}\hlstd{,} \hlstr{"sex"}\hlstd{,} \hlstr{"body_product"}\hlstd{,} \hlstr{"tot_mass"}\hlstd{,} \hlstr{"diet"}\hlstd{,} \hlstr{"family_relationship"}\hlstd{,} \hlstr{"genotype"}\hlstd{,} \hlstr{"SampleID"}\hlstd{)}
+\hlstd{keep.cols} \hlkwb{<-} \hlkwd{c}\hlstd{(}\hlstr{"collection_date"}\hlstd{,} \hlstr{"biome"}\hlstd{,} \hlstr{"target_gene"}\hlstd{,} \hlstr{"target_subfragment"}\hlstd{,}
+\hlstr{"host_common_name"}\hlstd{,} \hlstr{"host_subject_id"}\hlstd{,} \hlstr{"age"}\hlstd{,} \hlstr{"sex"}\hlstd{,} \hlstr{"body_product"}\hlstd{,} \hlstr{"tot_mass"}\hlstd{,}
+\hlstr{"diet"}\hlstd{,} \hlstr{"family_relationship"}\hlstd{,} \hlstr{"genotype"}\hlstd{,} \hlstr{"SampleID"}\hlstd{)}
 \hlstd{samdf} \hlkwb{<-} \hlstd{samdf[}\hlkwd{rownames}\hlstd{(seqtab), keep.cols]}
 \end{alltt}
 \end{kframe}
@@ -424,11 +412,8 @@ phylogenetic tree -- can now be combined into a single object.
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
-\hlstd{ps} \hlkwb{<-} \hlkwd{phyloseq}\hlstd{(}\hlkwd{tax_table}\hlstd{(taxtab),}
-               \hlkwd{sample_data}\hlstd{(samdf),}
-               \hlkwd{otu_table}\hlstd{(seqtab,} \hlkwc{taxa_are_rows} \hlstd{=} \hlnum{FALSE}\hlstd{),}
-               \hlkwd{phy_tree}\hlstd{(fitGTR}\hlopt{$}\hlstd{tree))}
+\hlstd{ps} \hlkwb{<-} \hlkwd{phyloseq}\hlstd{(}\hlkwd{tax_table}\hlstd{(taxtab),} \hlkwd{sample_data}\hlstd{(samdf),}
+               \hlkwd{otu_table}\hlstd{(seqtab,} \hlkwc{taxa_are_rows} \hlstd{=} \hlnum{FALSE}\hlstd{),} \hlkwd{phy_tree}\hlstd{(fitGTR}\hlopt{$}\hlstd{tree))}
 \end{alltt}
 \end{kframe}
 \end{knitrout}
-

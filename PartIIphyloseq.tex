@@ -140,8 +140,10 @@ To begin, create a table of read counts for each Phylum present in the dataset.
 ##                           1                         327 
 ##                Fusobacteria              Proteobacteria 
 ##                           1                          11 
-##                 Tenericutes             Verrucomicrobia                         <NA> 
-##                           1                           1                          6
+##                 Tenericutes             Verrucomicrobia 
+##                           1                           1 
+##                        <NA> 
+##                           6
 \end{verbatim}
 \end{kframe}
 \end{knitrout}
@@ -263,7 +265,7 @@ There is no reason to expect ahead of time that
 a single filtering workflow is appropriate for all analysis.
 
 
-\begin{figure}[H]
+
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
@@ -273,19 +275,13 @@ a single filtering workflow is appropriate for all analysis.
   \hlcom{# Include a guess for parameter}
   \hlkwd{geom_hline}\hlstd{(}\hlkwc{yintercept} \hlstd{=} \hlnum{0.05}\hlstd{,} \hlkwc{alpha} \hlstd{=} \hlnum{0.5}\hlstd{,} \hlkwc{linetype} \hlstd{=} \hlnum{2}\hlstd{)} \hlopt{+}  \hlkwd{geom_point}\hlstd{(}\hlkwc{size} \hlstd{=} \hlnum{2}\hlstd{,} \hlkwc{alpha} \hlstd{=} \hlnum{0.7}\hlstd{)} \hlopt{+}
   \hlkwd{scale_x_log10}\hlstd{()} \hlopt{+}  \hlkwd{xlab}\hlstd{(}\hlstr{"Total Abundance"}\hlstd{)} \hlopt{+} \hlkwd{ylab}\hlstd{(}\hlstr{"Prevalence [Frac. Samples]"}\hlstd{)} \hlopt{+}
-  \hlkwd{facet_wrap}\hlstd{(}\hlopt{~}\hlstd{Phylum)} \hlopt{+} \hlkwd{theme}\hlstd{(}\hlkwc{legend.position}\hlstd{=}\hlstr{"none"}\hlstd{)} \hlopt{+}
-  \hlkwd{ggtitle}\hlstd{(}\hlstr{"Prevalence (as frac. of samples), v. Total Counts"}\hlstd{)}
+  \hlkwd{facet_wrap}\hlstd{(}\hlopt{~}\hlstd{Phylum)} \hlopt{+} \hlkwd{theme}\hlstd{(}\hlkwc{legend.position}\hlstd{=}\hlstr{"none"}\hlstd{)}
 \end{alltt}
 \end{kframe}
-
-{\centering \includegraphics[width=\maxwidth]{phyloseqfigure/plotprevalence-1} 
-
-}
-
-
-
 \end{knitrout}
-\caption{Taxa prevalence v. total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
+\begin{figure}
+\includegraphics[width=\linewidth]{phyloseqfigure/plotprevalence-1}
+\caption{Taxa prevalence versus total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
 \end{figure}
 Sometimes a natural separation in the dataset reveals itself,
 or at least, a conservative choice that is in a stable region
