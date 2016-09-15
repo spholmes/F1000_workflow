@@ -1,9 +1,9 @@
 \subsection*{Amplicon bioinformatics: from raw reads to tables}
 This section demonstrates
 the ``full stack'' of amplicon bioinformatics: construction of the
-sample-by-sequence feature table from the raw reads, assignment of 
+sample-by-sequence feature table from the raw reads, assignment of
 taxonomy, and creation of a phylogenetic tree relating the sample
-sequences. 
+sequences.
 
 First we load the necessary packages.
 
@@ -12,21 +12,21 @@ library("knitr")
 library("BiocStyle")
 opts_chunk$set(cache = FALSE,fig.path="dadafigure/")
 read_chunk(file.path("src", "bioinformatics.R"))
-@ 
+@
 
 <<init>>=
-@ 
+@
 
 The data we will analyze here are highly-overlapping Illumina Miseq
 2x250 amplicon sequences from the V4 region of the 16S gene \cite{Kozich2013}.
 These 360 fecal samples were collected from 12 mice longitudinally over the
-first year of life, to investigate the development and 
+first year of life, to investigate the development and
 stabilization of the murine microbiome \cite{schloss2012stabilization}.
 These data are downloaded from the following location:
-\url{http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar}. 
+\url{http://www.mothur.org/MiSeqDevelopmentData/StabilityNoMetaG.tar}.
 
 <<files>>=
-@ 
+@
 
 \subsection*{Trim and Filter}
 
@@ -37,22 +37,22 @@ identical and therefore it is always worth inspecting the quality of the
 data before proceeding.
 
 <<profile,fig.show="hide">>=
-@ 
+@
 \begin{figure}
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-1} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-2} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-3} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-1}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-2}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-3}
 \\
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-4} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-5} 
-\includegraphics[width=0.3\maxwidth]{dadafigure/profile-6} 
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-4}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-5}
+\includegraphics[width=0.3\maxwidth]{dadafigure/profile-6}
 \caption{Forward and Reverse Error Profiles, the mean is in green, the median the solid orange line
 and the quartiles are the dotted orange lines.}
 \label{fig:r profile1}
 \end{figure}
 
 Most Illumina sequencing data shows a trend of decreasing average quality
-towards the end of sequencing reads. 
+towards the end of sequencing reads.
 
 Here, the forward reads maintain high quality throughout, while the quality
 of the reverse reads drops significantly at about position 160. Therefore,
@@ -67,7 +67,7 @@ errors per-read \cite{edgar2015unoise}. Trimming and filtering is performed on
 paired reads jointly, i.e. both reads must pass the filter for the pair to pass.
 
 <<filter>>=
-@ 
+@
 
 \subsection*{Infer sequence variants}
 After filtering, the typical amplicon bioinformatics workflow clusters
@@ -75,7 +75,7 @@ sequencing reads into operational taxonomic units (OTUs): groups of
 sequencing reads that differ by less than a fixed dissimilarity
 threshhold. Here we instead use the high-resolution DADA2
 method to to infer ribosomal sequence variants (RSVs) exactly, without imposing
-any arbitrary threshhold, and thereby 
+any arbitrary threshhold, and thereby
 resolving variants that differ by as little as one nucleotide \cite{dada2}.
 
 The sequence data is imported into R from demultiplexed fastq files (i.e. one
@@ -83,7 +83,7 @@ fastq for each sample) and simultaneously dereplicated to remove redundancy. We
 name the resulting `derep-class` objects by their sample name.
 
 <<derep>>=
-@ 
+@
 
 The DADA2 method relies on a parameterized model of substitution
 errors to distinguish sequencing errors from real biological
@@ -91,7 +91,7 @@ variation. Because error rates can (and often do) vary substantially
 between sequencing runs and PCR protocols, the model parameters can be
 discovered from the data itself using a form of unsupervised learning
 in which sample inference is alternated with parameter estimation
-until both are jointly consistent. 
+until both are jointly consistent.
 
 Parameter learning is computationally intensive, as it requires
 multiple iterations of the sequence inference algorithm, and therefore
@@ -99,7 +99,7 @@ it is often useful to estimate the error rates from a (sufficiently
 large) subset of the data.
 
 <<rates>>=
-@ 
+@
 
 In order to verify that the error rates have been reasonably
 well-estimated, we inspect the fit between the observed error rates (black
@@ -107,10 +107,10 @@ points) and the fitted error rates (black lines) in Figure \ref{fig:errorprofile
 
 
 <<plot-rates,fig.show="hide">>=
-@ 
+@
 \begin{figure}
-\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-1} 
-\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-2} 
+\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-1}
+\includegraphics[width=0.46\maxwidth]{dadafigure/plot-rates-2}
 \caption{Forward and Reverse Read Error Profiles, showing the
   frequencies of each type of nucleotide transition as a function of quality.}\label{fig:r
   errorprofile1}
@@ -126,21 +126,21 @@ size. Pooled inference is more computationally taxing, and can become
 intractable for datasets of tens of millions of reads.
 However, pooling improves the detection of rare variants that
 were seen just once or twice in an individual sample but many times across
-all samples. As this dataset is not particularly large, we perform pooled 
-inference. *Of potential interest, the 
+all samples. As this dataset is not particularly large, we perform pooled
+inference. *Of potential interest, the
 \href{https://github.com/benjjneb/dada2}{development version of dada2}
 has added multithreading, which can substantially speed this step.*
 
 <<dada>>=
-@ 
+@
 
 The DADA2 sequence inference step removed (nearly) all substitution and
-indel errors from the data \cite{dada2}. We now merge together the inferred forward 
+indel errors from the data \cite{dada2}. We now merge together the inferred forward
 and reverse sequences, removing paired sequences that do not perfectly
 overlap as a final control against residual errors.
 
 <<merge>>=
-@ 
+@
 
 \subsection*{Construct sequence table and remove chimeras}
 
@@ -149,17 +149,17 @@ analogue of the common "OTU table", i.e. a sample by sequence feature
 table valued by the number of times each sequence was observed in each sample.
 
 <<seqtab>>=
-@ 
+@
 
 Notably, chimeras have not yet been removed. The error model in the
 sequence inference algorithm does not include a chimera component, and
-therefore we expect this sequence table to include many chimeric sequences. 
+therefore we expect this sequence table to include many chimeric sequences.
 We now remove chimeric sequences by comparing each inferred sequence to the
 others in the table, and removing those that can be reproduced by
 stitching together two more abundant sequences.
 
 <<chimeras>>=
-@ 
+@
 
 Although exact numbers vary substantially by experimental condition, it is
 typical that chimeras comprise a substantial fraction of inferred sequence variants,
@@ -178,7 +178,7 @@ variants to a training set of classified sequences, and here we use the
 RDP v14 training set \cite{cole2009rdp}.
 
 <<tax>>=
-@ 
+@
 
 GreenGenes and Silva training set {\tt fasta} files formatted for the
 `assignTaxonomy` function are also available for download at
@@ -190,11 +190,11 @@ analyses, especially the calculation of phylogeny-aware distances
 between microbial communities. The DADA2 sequence inference method is
 reference-free, so we must construct the phylogenetic tree relating
 the inferred sequence variants de novo. We begin by performing a
-multiple-alignment using the \Biocpkg{DECIPHER} R package
+multiple-alignment using the {\tt DECIPHER} R package
 \cite{wright2015decipher}.
 
 <<msa, output=FALSE,message=FALSE>>=
-@ 
+@
 
 The \CRANpkg{phangorn} R package is then used to construct a
 phylogenetic tree. Here we first construct a neighbor-joining tree,
@@ -202,23 +202,22 @@ and then fit a GTR+G+I (Generalized time-reversible with Gamma rate variation) m
 neighbor-joining tree as a starting point.
 
 <<tree>>=
-@ 
+@
 
 \subsection*{Combine data into a phyloseq object}
 
-The \Biocpkg{phyloseq} package
+The \BioCpkg{phyloseq} package
 organizes and synthesizes the different data types from a typical
 amplicon sequencing experiment into a single data object that can be
 easily manipulated. The last bit of information needed is the sample
-data contained in a \texttt{.csv} file. 
+data contained in a \texttt{.csv} file.
 
 <<samdat>>=
-@ 
+@
 
 The full suite of data for this study -- the sample-by-sequence
 feature table, the sample metadata, the sequence taxonomies, and the
 phylogenetic tree -- can now be combined into a single object.
 
 <<phyloseq>>=
-@ 
-
+@

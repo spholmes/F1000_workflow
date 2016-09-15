@@ -809,6 +809,6 @@ needed to display all of the features.
 @
 \caption{A PCA triplot produced from the CCA selected features in from muliple data types (metabolites and OTUs).
 Note that we have departed from our convention of fixing the aspect ratio here as the second axis
-represents very little of the variability and the plot would actually become unreadble.}
+represents very little of the variability and the plot would actually become unreadable.}
 \label{fig:multitable-interpret-pca}
 \end{figure}

@@ -217,18 +217,19 @@ There is no reason to expect ahead of time that
 a single filtering workflow is appropriate for all analysis.
 
 
-\begin{figure}[H]
-<<plotprevalence>>=
+
+<<plotprevalence, fig.show="hide",fig.width=7, fig.height=4>>=
 # Subset to the remaining phyla
 prevdf1 = subset(prevdf, Phylum %in% get_taxa_unique(ps1, "Phylum"))
 ggplot(prevdf1, aes(TotalAbundance, Prevalence / nsamples(ps0),color=Phylum)) +
   # Include a guess for parameter
   geom_hline(yintercept = 0.05, alpha = 0.5, linetype = 2) +  geom_point(size = 2, alpha = 0.7) +
   scale_x_log10() +  xlab("Total Abundance") + ylab("Prevalence [Frac. Samples]") +
-  facet_wrap(~Phylum) + theme(legend.position="none") +
-  ggtitle("Prevalence (as frac. of samples), v. Total Counts")
+  facet_wrap(~Phylum) + theme(legend.position="none")
 @
-\caption{Taxa prevalence v. total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
+\begin{figure}
+\includegraphics[width=\linewidth]{phyloseqfigure/plotprevalence-1}
+\caption{Taxa prevalence versus total counts. Each point is a different taxa. Exploration of the data in this way is often useful for selecting filtering parameters, like the minimum prevalence criteria we will used to filter the data above.}
 \end{figure}
 Sometimes a natural separation in the dataset reveals itself,
 or at least, a conservative choice that is in a stable region
