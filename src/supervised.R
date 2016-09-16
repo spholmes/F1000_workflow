@@ -5,11 +5,11 @@
 
 ## ----caret-pls ------------------------------------------------------
 setup_example(c("phyloseq", "ggplot2", "caret", "plyr", "dplyr"))
-sample_data(pslog)$age2 <- cut(sample_data(ps)$age, c(0, 100, 400))
+sample_data(pslog)$age2 <- cut(sample_data(pslog)$age, c(0, 100, 400))
 dataMatrix <- data.frame(age = sample_data(pslog)$age2, otu_table(pslog))
 # take 8 mice at random to be the training set, and the remaining 4 the test set
 trainingMice <- sample(unique(sample_data(pslog)$host_subject_id), size = 8)
-inTrain <- which(sample_data(ps)$host_subject_id %in% trainingMice)
+inTrain <- which(sample_data(pslog)$host_subject_id %in% trainingMice)
 training <- dataMatrix[inTrain,]
 testing <- dataMatrix[-inTrain,]
 plsFit <- train(age ~ ., data = training,
