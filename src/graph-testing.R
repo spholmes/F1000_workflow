@@ -6,7 +6,7 @@
 # script preprocessing.R
 
 ## ---- network-setup ----------------------------------------------
-setup_example(c("igraph", "phyloseq", "phyloseqGraphTest", "ggnetwork", "intergraph"))
+setup_example(c("igraph", "phyloseq", "phyloseqGraphTest", "ggnetwork", "intergraph", "gridExtra"))
 
 ## ---- ggnetwork --------------------------------------------------
 net <- make_network(ps, max.dist=0.35)
