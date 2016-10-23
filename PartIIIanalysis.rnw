@@ -12,11 +12,11 @@ alternative analysis ideas. The advantage of performing this full
 workflow in R is that this transition from bioinformatics to
 statistics is effortless.
 
-We back these claims by illustrating several analysis on the mouse
+We back these claims by illustrating several analyses on the mouse
 data prepared above. We experiment with several flavors of exploratory
 ordination before shifting to more formal testing and modeling,
 explaining the settings in which the different points of view are most
-appropriate. Finally, we provide example analysis of multitable data,
+appropriate. Finally, we provide example analyses of multitable data,
 using a study in which both metabolomic and microbial abundance
 measurements were collected on the same samples, to demonstrate that
 the general workflow presented here can be adapted to the multitable
@@ -94,14 +94,13 @@ diversity is by far the lowest of all the samples.
 \end{figure}
 
 \subsubsection*{Aspect ratio of ordination plots}
-In the above plots, you may have noticed as did the reviewers of the first version of the paper, that
+In the ordination plots in Figures 8-14, you may have noticed as did the reviewers of the first version of the paper, that
 the maps are not presented as square representations as is often the case in
 standard PCoA and PCA plots in the literature.
 
-The reason for this is that as we are trying to represent the distances between samplesas faitfully as possible
+The reason for this is that as we are trying to represent the distances between samples as faithfully as possible;
 we have to take into account that the second eigenvalue is always smaller
-than the first, sometimes considerably so, thus we normalize the axis ration to the relevant eigenvalue
-ratios.
+than the first, sometimes considerably so, thus we normalize the axis norm ratios to the relevant eigenvalue ratios.
 
 \subsection*{Different Ordination Projections}
 
@@ -253,7 +252,7 @@ interpret these biplots when the ordering between samples reflects
 sample characteristics -- variations in age or litter status in the
 mouse data, for example -- and this central to the design of CCpnA.
 
-The function allows to create biplots where the positions of samples are determined by
+The function allows us to create biplots where the positions of samples are determined by
 similarity in both species signatures and environmental
 characteristics; in contrast, principal components analysis or
 correspondence analysis only look at species signatures. More
@@ -323,11 +322,11 @@ once.
 \label{fig:ccpna-plot-litter}
 \end{figure}
 
-\subsubsection*{Supervised learning}
+\subsubsection{Supervised learning}
 \label{sec:supervised-learning}
 
 Here we illustrate some supervised learning methods that can be easily
-run in R. The \CRANpkg{caret} wraps many prediction algorithms
+run in R. The \CRANpkg{caret} package wraps many prediction algorithms
 available in R and performs parameter tuning automatically. Since we
 saw that microbiome signatures change with age, we'll apply supervised
 techniques to try to predict age from microbiome composition.
@@ -352,7 +351,7 @@ As another example, we can try out random forests. This is run in
 exactly the same way as PLS, by switching the \Robject{method}
 argument from \Robject{pls} to \Robject{rf}. Random forests also
 perform well at the prediction task  on this test set, though there
-are more old mice misclassified than young.
+are more old mice misclassified as young.
 <<caret-rf, eval =T>>=
 @
 
@@ -519,7 +518,7 @@ given below.
 <<knn-2, eval=FALSE>>=
 @
 
-<<knn-2-plot, eval=FALSE>>=
+<<knn-2-plot, eval=FALSE, echo=FALSE>>=
 @
 
 \subsubsection*{Distance threshold}
@@ -552,7 +551,7 @@ to see what happens (code given below but output not shown).
 <<threshold-2000, eval=FALSE>>=
 @
 
-<<threshold-2000-plot, eval = FALSE>>=
+<<threshold-2000-plot, eval = FALSE, echo=FALSE>>=
 @
 
 
@@ -668,7 +667,7 @@ first shorten the names of each microbe.
 
 Unlike standard multiple hypothesis testing, the hierarchical testing
 procedure needs univariate tests for each higher-level taxonomic
-group, not just every bacteria. A helper function,
+group, not just every species. A helper function,
 \Rfunction{treePValues}, is available for this; it expects an edgelist
 encoding parent-child relationships, with the first row specifying the
 root node.
@@ -712,7 +711,7 @@ rejected hypotheses.
 
 It seems that the most strongly associated bacteria all belong to
 family \emph{Lachnospiraceae}, which is consistent with the random forest
-results in Section \ref{sec:supervised-learning}.
+results.
 
 \subsection*{Multitable techniques}
 
