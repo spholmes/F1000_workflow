@@ -23,9 +23,6 @@ if(any(!.inst)) {
 sapply(c(.cran_packages, .bioc_packages), require, character.only = TRUE)
 set.seed(100)
 
-# you have to change this (unless we put the data on dropbox and
-# automatically download
-
 ## ---- files ----
 miseq_path <- file.path("data", "MiSeq_SOP")
 filt_path <- file.path("data", "filtered")
