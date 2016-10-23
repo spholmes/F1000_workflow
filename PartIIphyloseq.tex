@@ -43,7 +43,7 @@ and linked directly at
 
 
 \subsection*{Loading Data}
-Many use cases result in the necessity to import and combine different
+Many use cases result in the need to import and combine different
 data into a phyloseq class object,
 this can be done using th \Rfunction{import\_biom}
 function to read recent QIIME format files, older files
@@ -167,7 +167,7 @@ Note the flexibility in defining strings that should be considered ambiguous ann
 
 A useful next step is to explore feature \emph{prevalence} in the dataset,
 which we will define here as
-the number of samples in which a taxa appears at least once.
+the number of samples in which a taxon appears at least once.
 
 \begin{knitrout}
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
@@ -289,9 +289,9 @@ for which small changes to the choice would have
 minor or no effect on the biological interpreation (stability).
 Here no natural separation is immediately evident,
 but it looks like we might reasonably define a prevalence threshold
-in a range of zero to 10 percent or so.
+in a range of zero to ten percent or so.
 Take care that this choice does not introduce bias
-into your downstream analysis.
+into a downstream analysis of association of differential abundance.
 
 The following uses five percent of all samples
 as the prevalence threshold.
@@ -391,20 +391,15 @@ using \Robject{gridExtra::grid.arrange}.
 \definecolor{shadecolor}{rgb}{0.969, 0.969, 0.969}\color{fgcolor}\begin{kframe}
 \begin{alltt}
 \hlstd{multiPlotTitleTextSize} \hlkwb{=} \hlnum{8}
-\hlstd{p2tree} \hlkwb{=} \hlkwd{plot_tree}\hlstd{(ps2,}
-                   \hlkwc{method} \hlstd{=} \hlstr{"treeonly"}\hlstd{,}
+\hlstd{p2tree} \hlkwb{=} \hlkwd{plot_tree}\hlstd{(ps2,} \hlkwc{method} \hlstd{=} \hlstr{"treeonly"}\hlstd{,}
                    \hlkwc{ladderize} \hlstd{=} \hlstr{"left"}\hlstd{,}
                    \hlkwc{title} \hlstd{=} \hlstr{"Before Agglomeration"}\hlstd{)} \hlopt{+}
   \hlkwd{theme}\hlstd{(}\hlkwc{plot.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size} \hlstd{= multiPlotTitleTextSize))}
-\hlstd{p3tree} \hlkwb{=} \hlkwd{plot_tree}\hlstd{(ps3,}
-                   \hlkwc{method} \hlstd{=} \hlstr{"treeonly"}\hlstd{,}
-                   \hlkwc{ladderize} \hlstd{=} \hlstr{"left"}\hlstd{,}
-                   \hlkwc{title} \hlstd{=} \hlkwd{paste0}\hlstd{(}\hlstr{"tax_glom(..., taxrank='"}\hlstd{,} \hlstr{"Genus"}\hlstd{,} \hlstr{"')"}\hlstd{))} \hlopt{+}
+\hlstd{p3tree} \hlkwb{=} \hlkwd{plot_tree}\hlstd{(ps3,} \hlkwc{method} \hlstd{=} \hlstr{"treeonly"}\hlstd{,}
+                   \hlkwc{ladderize} \hlstd{=} \hlstr{"left"}\hlstd{,} \hlkwc{title} \hlstd{=} \hlstr{"By Genus"}\hlstd{)} \hlopt{+}
   \hlkwd{theme}\hlstd{(}\hlkwc{plot.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size} \hlstd{= multiPlotTitleTextSize))}
-\hlstd{p4tree} \hlkwb{=} \hlkwd{plot_tree}\hlstd{(ps4,}
-                   \hlkwc{method} \hlstd{=} \hlstr{"treeonly"}\hlstd{,}
-                   \hlkwc{ladderize} \hlstd{=} \hlstr{"left"}\hlstd{,}
-                   \hlkwc{title} \hlstd{=} \hlkwd{paste0}\hlstd{(}\hlstr{"tip_glom(..., h="}\hlstd{, h1,} \hlstr{")"}\hlstd{))} \hlopt{+}
+\hlstd{p4tree} \hlkwb{=} \hlkwd{plot_tree}\hlstd{(ps4,} \hlkwc{method} \hlstd{=} \hlstr{"treeonly"}\hlstd{,}
+                   \hlkwc{ladderize} \hlstd{=} \hlstr{"left"}\hlstd{,} \hlkwc{title} \hlstd{=} \hlstr{"By Height"}\hlstd{)} \hlopt{+}
   \hlkwd{theme}\hlstd{(}\hlkwc{plot.title} \hlstd{=} \hlkwd{element_text}\hlstd{(}\hlkwc{size} \hlstd{= multiPlotTitleTextSize))}
 \end{alltt}
 \end{kframe}

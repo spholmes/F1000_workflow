@@ -48,7 +48,7 @@ data before proceeding.
 \includegraphics[width=0.3\maxwidth]{dadafigure/profile-6}
 \caption{Forward and Reverse Error Profiles, the mean is in green, the median the solid orange line
 and the quartiles are the dotted orange lines.}
-\label{fig:r profile1}
+\label{fig:errorprofile1}
 \end{figure}
 
 Most Illumina sequencing data shows a trend of decreasing average quality
@@ -80,7 +80,7 @@ resolving variants that differ by as little as one nucleotide \cite{dada2}.
 
 The sequence data is imported into R from demultiplexed fastq files (i.e. one
 fastq for each sample) and simultaneously dereplicated to remove redundancy. We
-name the resulting `derep-class` objects by their sample name.
+name the resulting {\tt derep-class} objects by their sample name.
 
 <<derep>>=
 @
@@ -105,7 +105,6 @@ In order to verify that the error rates have been reasonably
 well-estimated, we inspect the fit between the observed error rates (black
 points) and the fitted error rates (black lines) in Figure \ref{fig:errorprofile1}.
 
-
 <<plot-rates,fig.show="hide">>=
 @
 \begin{figure}
@@ -117,8 +116,8 @@ points) and the fitted error rates (black lines) in Figure \ref{fig:errorprofile
 \end{figure}
 
 The DADA2 sequence inference method can run in two different modes:
-Independent inference by sample (`pool=FALSE`), and inference from the
-pooled sequencing reads from all samples (`pool=TRUE`). Independent
+Independent inference by sample ({\tt pool=FALSE}), and inference from the
+pooled sequencing reads from all samples ({\tt pool=TRUE}). Independent
 inference has the advantage that computation time is linear
 in the number of samples, and memory requirements are flat with the
 number of samples. This allows scaling out to datasets of almost unlimited
@@ -127,9 +126,9 @@ intractable for datasets of tens of millions of reads.
 However, pooling improves the detection of rare variants that
 were seen just once or twice in an individual sample but many times across
 all samples. As this dataset is not particularly large, we perform pooled
-inference. *Of potential interest, the
-\href{https://github.com/benjjneb/dada2}{development version of dada2}
-has added multithreading, which can substantially speed this step.*
+inference. 
+As of version 1.2, multithreading can be activated with the arguments 
+{\tt multithread = TRUE}, which can substantially speed this step.
 
 <<dada>>=
 @
@@ -181,7 +180,7 @@ RDP v14 training set \cite{cole2009rdp}.
 @
 
 GreenGenes and Silva training set {\tt fasta} files formatted for the
-`assignTaxonomy` function are also available for download at
+{\tt assignTaxonomy} function are also available for download at
 \url{https://www.dropbox.com/sh/mfcivbudmc21cqt/AAB1l-AUM5uKvjrR33ct-cTXa?dl=0}.
 
 \subsection*{Construct phylogenetic tree}

@@ -92,10 +92,10 @@
 \author[1]{Ben J Callahan}
 \author[1]{Kris Sankaran}
 \author[1]{Julia A Fukuyama}
-\author[4]{Paul J McMurdie}
+\author[2]{Paul J McMurdie}
 \author[1*]{Susan P Holmes}
 \affil[1]{{\tt\{benjc,kriss1,jaf88\}@stanford.edu}, Statistics Department, Sequoia Hall, Stanford, CA 94305}
-\affil[4]{{\tt mcmurdie@stanford.edu}, Whole Biome Inc, San Francisco,  CA 94107 }
+\affil[2]{{\tt mcmurdie@stanford.edu}, Whole Biome Inc, San Francisco,  CA 94107 }
 \affil[1*]{Corresponding author, {\tt susan@stat.stanford.edu}, Statistics Department, Sequoia Hall, Stanford, CA 94305}
 
 
@@ -118,7 +118,7 @@ normalize the data by subsampling to equalize library sizes.  In this
 paper, we show that statistical models allow more accurate abundance
 estimates. By providing a complete workflow in R, we enable the user
 to do sophisticated downstream statistical analyses, whether
-parametric or non-parametric. We provide examples of using the  R
+parametric or nonparametric. We provide examples of using the  R
 packages {\tt dada2, phyloseq, DESeq2, ggplot2} and {\tt vegan} to filter, visualize and
 test microbiome data. We also provide examples of supervised analyses using random
 forests and nonparametric testing using community networks and the {\tt ggnetwork}
@@ -128,19 +128,26 @@ package.
 In version 2 of the manuscript:
 
 We have updated the procedure for storing the
-filtered and trimmed files during the call to {\tt dada2}, this avoids overwriting
+filtered and trimmed files during the call to 
+{\tt dada2}, this avoids overwriting
 the files if the workflow is run several times following a comment from one of the readers.
 
 We have replaced the {\tt msa} alignment function with {\tt AlignSeqs} function from
-from the \BioCpkg{DECIPHER}\citep{DECIPHER} package, making the workflow
-more computationally efficient.
+from the \BioCpkg{DECIPHER}\citep{DECIPHER} package, making the workflow more computationally efficient.
 
 We have expanded the phyloseq section and reduced the number of network plots.
 We have also
 provided detailed discussion of our choice {\bf not} to make the PCoA and PCA plots square.
 
 We have added more detailed instructions in the Github repository as to how one can run only parts
-of the workflow and how to generate the full paper from scratch.
+of the workflow and how to generate the full paper from scratch using the {\tt main.rnw} file.
+
+As suggested by reviewers, we have added more extended captions to figures. We have however refrained from
+providing a complete
+evaluation of DADA2 vs. OTUs or pooled/unpooled data to this manuscript. Performing such evaluations well is a significant undertaking and would take significant space to explain, and our primary purpose here is to demonstrate the many features of an R/Bioconductor amplicon analysis workflow.
+
+We thank the three reviewers and a commentator who have provided useful feedback and we hope the revision has enhanced the readability and explained  the code more completely.
+
 \section*{Introduction}
 The {\em microbiome} is formed of the ecological communities of
 microorganisms that dominate the living world. Bacteria can now be

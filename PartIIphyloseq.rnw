@@ -66,7 +66,7 @@ min_theme <- theme_update(panel.border = element_blank(),
 
 
 \subsection*{Loading Data}
-Many use cases result in the necessity to import and combine different
+Many use cases result in the need to import and combine different
 data into a phyloseq class object,
 this can be done using th \Rfunction{import\_biom}
 function to read recent QIIME format files, older files
@@ -151,7 +151,7 @@ ps0 <- subset_taxa(ps, !is.na(Phylum) & !Phylum %in% c("", "uncharacterized"))
 
 A useful next step is to explore feature \emph{prevalence} in the dataset,
 which we will define here as
-the number of samples in which a taxa appears at least once.
+the number of samples in which a taxon appears at least once.
 
 <<prevfilter0>>=
 # Compute prevalence of each feature, store as data.frame
@@ -237,9 +237,9 @@ for which small changes to the choice would have
 minor or no effect on the biological interpreation (stability).
 Here no natural separation is immediately evident,
 but it looks like we might reasonably define a prevalence threshold
-in a range of zero to 10 percent or so.
+in a range of zero to ten percent or so.
 Take care that this choice does not introduce bias
-into your downstream analysis.
+into a downstream analysis of association of differential abundance.
 
 The following uses five percent of all samples
 as the prevalence threshold.
@@ -315,20 +315,15 @@ using \Robject{gridExtra::grid.arrange}.
 
 <<plotglomprep>>=
 multiPlotTitleTextSize = 8
-p2tree = plot_tree(ps2,
-                   method = "treeonly",
+p2tree = plot_tree(ps2, method = "treeonly",
                    ladderize = "left",
                    title = "Before Agglomeration") +
   theme(plot.title = element_text(size = multiPlotTitleTextSize))
-p3tree = plot_tree(ps3,
-                   method = "treeonly",
-                   ladderize = "left",
-                   title = paste0("tax_glom(..., taxrank='", "Genus", "')")) +
+p3tree = plot_tree(ps3, method = "treeonly",
+                   ladderize = "left", title = "By Genus") +
   theme(plot.title = element_text(size = multiPlotTitleTextSize))
-p4tree = plot_tree(ps4,
-                   method = "treeonly",
-                   ladderize = "left",
-                   title = paste0("tip_glom(..., h=", h1, ")")) +
+p4tree = plot_tree(ps4, method = "treeonly",
+                   ladderize = "left", title = "By Height") +
   theme(plot.title = element_text(size = multiPlotTitleTextSize))
 @
 
