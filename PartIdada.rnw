@@ -74,7 +74,7 @@ After filtering, the typical amplicon bioinformatics workflow clusters
 sequencing reads into operational taxonomic units (OTUs): groups of
 sequencing reads that differ by less than a fixed dissimilarity
 threshhold. Here we instead use the high-resolution DADA2
-method to to infer ribosomal sequence variants (RSVs) exactly, without imposing
+method to infer ribosomal sequence variants (RSVs) exactly, without imposing
 any arbitrary threshhold, and thereby
 resolving variants that differ by as little as one nucleotide \cite{dada2}.
 

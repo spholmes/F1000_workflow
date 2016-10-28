@@ -2,26 +2,29 @@
 \subsection*{phyloseq}
 
 \BioCpkg{phyloseq}\cite{phyloseqplosone}
-is an R package to import, store, analyze, and graphically display complex
-phylogenetic sequencing data that has already been
-clustered into Operational Taxonomic Units (OTUs)
-or more appropriately denoised,
-and it is most useful when there is also associated
+is an R package to import, store, analyze, and graphically display
+microbiome census data that has already been
+organized into counts of sequence features for each sample.
+These sequence features can be RSVs, OTUs, 
+or other analogous features.
+It is most useful when there is also associated
 sample data,
 phylogeny,
-and/or taxonomic assignment of each taxa.
+and/or taxonomic assignment for each feature/taxa.
 \BioCpkg{phyloseq} leverages and builds upon
 many of the tools available in R
 for ecology and phylogenetic analysis (\citeCRANpkg{vegan}, \citeCRANpkg{ade4}, \citeCRANpkg{ape}),
-while also using advanced/flexible graphic systems (\citeCRANpkg{ggplot2})
+while also using the powerful and extensible 
+graphics framework, ggplot2~\citeCRANpkg{ggplot2},
 to easily produce publication-quality graphics of complex phylogenetic data.
-The {\tt phyloseq} package uses a specialized system of S4 data classes
-to store all related phylogenetic sequencing data
+The {\tt phyloseq} package uses a system of S4 data classes
+to store related data
 as a single, self-consistent, self-describing experiment-level object,
 making it easier to share data and reproduce analyses.
 In general, phyloseq seeks to facilitate the use of R
 for efficient interactive and reproducible analysis
-of amplicon count data jointly with important sample covariates.
+of microbiome count data, 
+jointly with important sample or taxonomic covariates.
 
 \subsection*{Further documentation}
 
@@ -343,7 +346,7 @@ It is usually necessary to transform microbiome count data
 to account for differences in library size, variance, scale, etc.
 The phyloseq package provides a flexible interface for defining
 new functions to accomplish these transformations of the abundance values
-via the \Robject{transform\_sample\_counts()} function.
+via \Robject{transform\_sample\_counts()}.
 The first argument to this function is the phyloseq object you want to transform,
 and the second argument is an R function that defines the transformation.
 The R function is applied sample-wise, expecting that the first unnamed argument
@@ -359,7 +362,7 @@ This example begins by defining a custom plot function,
 \Robject{plot\_abundance()},
 that uses phyloseq's \Robject{psmelt()} function
 to define a relative abundance graphic.
-We will use this to compare more easily differences
+We will use this to compare differences
 in scale and distribution of the abundance values
 in our phyloseq object before and after transformation.
 
