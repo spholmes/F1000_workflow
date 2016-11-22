@@ -2,6 +2,13 @@
 
 # Bioconductor Workflow for Microbiome Data Analysis: from raw reads to community analyses.
 
+## Getting started
+
+If you're new to GitHub, please note that this README is shown on the repository front page by convention and for convenience.
+This is not to say that the code shown below is meant to be run in a bare R session without the supporting files or dependent packages installed.
+Please click on the **download** or **clone** buttons to access the complete repository.
+The workflow is completely reproducible, if run from within this repository, after you have downloaded it to your computer.
+
 ## Generate output documents
 
 To generate the output pdfs from the .Rnw documents in this repository (eg):
