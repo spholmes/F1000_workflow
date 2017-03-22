@@ -7,8 +7,17 @@
 setup_example(c("phyloseq", "structSSI", "plyr", "dplyr", "reshape2",
                 "ggplot2", "DESeq2"))
 ps_dds <- phyloseq_to_deseq2(ps,  ~ age_binned + family_relationship)
-varianceStabilizingTransformation(ps_dds, blind = TRUE, fitType = "parametric")
-ps_dds <- estimateSizeFactors(ps_dds)
+
+# geometric mean, set to zero when all coordinates are zero
+geo_mean_protected <- function(x) {
+  if (all(x == 0)) {
+    return (0)
+  }
+  exp(mean(log(x[x != 0])))
+}
+
+geoMeans <- apply(counts(ps_dds), 1, geo_mean_protected)
+ps_dds <- estimateSizeFactors(ps_dds, geoMeans = geoMeans)
 ps_dds <- estimateDispersions(ps_dds)
 abund <- getVarianceStabilizedData(ps_dds)
 
