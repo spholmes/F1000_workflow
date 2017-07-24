@@ -57,7 +57,7 @@ package.
 Introduction {#introduction .unnumbered}
 ============
 
-The [*microbiome*] is formed of the ecological communities of
+The **microbiome** is formed of the ecological communities of
 microorganisms that dominate the living world. Bacteria can now be
 identified through the use of next generation sequencing applied at
 several levels. Shotgun sequencing of all bacteria in a sample delivers
@@ -87,8 +87,8 @@ workflow, we have used the labeled sequences to build a de novo
 phylogenetic with the .
 
 The key step in the sequence analysis is the manner in which reads are
-denoised and assembled into groups we have chosen to call [ASVs
-(Amplicon Sequence Variants)][@callahan2017exact] instead of the traditional [OTUs(Operational Taxonomic Units)].
+denoised and assembled into groups we have chosen to call **ASV**s
+(Amplicon Sequence Variants)[@callahan2017exact] instead of the traditional OTUs(Operational Taxonomic Units).
 
 A published (but essentially similar) version of this workflow, including reviewer reports and comments
 is available [@callahan2016F1000], see
@@ -117,9 +117,7 @@ been imported into R.
 In addition, the code can be easily adapted to accommodate batch
 effects, covariates and multiple experimental factors.
 
-
-
-The workflow is based on software packages from the open-source
+This workflow is based on software packages from the open-source
 Bioconductor project [@Huber:2015].
 We provide all steps necessary from
 the denoising and identification of the reads input as raw sequences as
@@ -1334,7 +1332,7 @@ The resulting biplot is displayed in Figure
 earlier ordination diagrams, with the exception that the projection is
 chosen with an explicit reference to the binned age variable.
 Specifically, PLS identifies a subspace to maximize discrimination
-between classes, and the biplot displays sample projections and RSV
+between classes, and the biplot displays sample projections and ASV
 coefficients with respect to this subspace.
 
 
@@ -1407,6 +1405,7 @@ shape by litter.
 
 ```{r xtrasetupknitr, echo=FALSE}
 theme_set(theme_bw())
+
 min_theme <- theme_update(panel.border = element_blank(),
                           panel.grid = element_blank(),
                           axis.ticks = element_blank(),
@@ -1426,17 +1425,19 @@ library("igraph")
 library("ggnetwork")
 net <- make_network(ps, max.dist=0.35)
 sampledata <- data.frame(sample_data(ps))
+
 V(net)$id <- sampledata[names(V(net)), "host_subject_id"]
 V(net)$litter <- sampledata[names(V(net)), "family_relationship"]
+
 ```
 
 
 ```{r ggnetwork-plot,fig.wide=TRUE, fig.cap="A network created by thresholding the Jaccard dissimilarity  matrix."}
 ggplot(net, aes(x = x, y = y, xend = xend, yend = yend), layout = "fruchtermanreingold") +
   geom_edges(color = "darkgray") +
-  geom_nodes(aes(color = id, shape = litter), size=3) +
+  geom_nodes(aes(color = id, shape = litter),  size=3) +
   theme(axis.text = element_blank(), axis.title = element_blank(),
-        legend.key.height = unit(0.5,"line")) +
+        legend.key.height = unit(0.6,"line")) +
   guides(col = guide_legend(override.aes = list(size = .5)))
 ```
 
@@ -1677,7 +1678,7 @@ hand.
 We have provided a brief overview of all the analyses that become
 possible once the data has been imported into the _R_ environment.
 Multivariate projections using the phylogenetic tree as the relevant
-distance between OTUs/RSVs can be done using weighted unifrac or double
+distance between OTUs/ASVs can be done using weighted unifrac or double
 principal coordinate analyses using the
 [*phyloseq*](http://www.bioconductor.org/packages/release/bioc/html/phyloseq.html)
 package. Biplots provide the user with an interpretation key. These
