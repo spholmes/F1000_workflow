@@ -502,7 +502,14 @@ were organized into a phyloseq object. We have actually
 run dada2 on a larger set of samples from the same data source.
 This object was also saved in R-native serialized RDS format.
 We will re-load this here for completeness as the initial object `ps`.
+If you have not downloaded the whole repository you can access the `ps`
+file though github:
 
+```{r non-local, eval=FALSE}
+ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
+ps = readRDS(ps_connect)
+```
+Otherwise we just read from the data directory that we downloaded:
 ```{r}
 ps = readRDS("../data/ps.rds")
 ps
@@ -1112,7 +1119,7 @@ sample_ix <- sample(1:nrow(abund_df), 8)
 ggplot(abund_df %>%
          filter(sample %in% abund_df$sample[sample_ix])) +
   geom_point(aes(x = abund, y = rank, col = sample),
-             position = position_jitter(width = 0.2), size = .7) +
+             position = position_jitter(width = 0.2), size = 1.5) +
   labs(x = "Abundance", y = "Thresholded rank") +
   scale_color_brewer(palette = "Set2")
 ```  
@@ -1405,7 +1412,6 @@ shape by litter.
 
 ```{r xtrasetupknitr, echo=FALSE}
 theme_set(theme_bw())
-
 min_theme <- theme_update(panel.border = element_blank(),
                           panel.grid = element_blank(),
                           axis.ticks = element_blank(),
@@ -1414,6 +1420,7 @@ min_theme <- theme_update(panel.border = element_blank(),
                           axis.text = element_text(size = 6),
                           axis.title = element_text(size = 8),
                           strip.background = element_blank(),
+                          
                           strip.text = element_text(size = 8),
                           legend.key = element_blank())
 ```
@@ -1428,16 +1435,15 @@ sampledata <- data.frame(sample_data(ps))
 
 V(net)$id <- sampledata[names(V(net)), "host_subject_id"]
 V(net)$litter <- sampledata[names(V(net)), "family_relationship"]
-
 ```
 
 
 ```{r ggnetwork-plot,fig.wide=TRUE, fig.cap="A network created by thresholding the Jaccard dissimilarity  matrix."}
 ggplot(net, aes(x = x, y = y, xend = xend, yend = yend), layout = "fruchtermanreingold") +
   geom_edges(color = "darkgray") +
-  geom_nodes(aes(color = id, shape = litter),  size=3) +
+  geom_nodes(aes(color = id, shape = litter),  size = 3 ) +
   theme(axis.text = element_blank(), axis.title = element_blank(),
-        legend.key.height = unit(0.6,"line")) +
+        legend.key.height = unit(0.5,"line")) +
   guides(col = guide_legend(override.aes = list(size = .5)))
 ```
 
@@ -1789,7 +1795,7 @@ Acknowledgments {#acknowledgments .unnumbered}
 ===============
 
 The authors would like to thank the members of the Relman Lab for their
-valuable insights on microbiology and sequencing. The are also grateful
+valuable insights on microbiology and sequencing. We are also grateful
 to Nandita Garud, Leo Lahti, Zachary Charlop-Powers for reviewing the
 F1000Research workflow paper and to Martina Fu and Shaheen Essabhoy for code testing and
 suggestions for the revised version.
