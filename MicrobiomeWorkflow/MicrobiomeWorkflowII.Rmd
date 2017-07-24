@@ -505,13 +505,9 @@ We will re-load this here for completeness as the initial object `ps`.
 If you have not downloaded the whole repository you can access the `ps`
 file though github:
 
-```{r non-local, eval=FALSE}
+```{r non-local}
 ps_connect <-url("https://raw.githubusercontent.com/spholmes/F1000_workflow/master/data/ps.rds")
 ps = readRDS(ps_connect)
-```
-Otherwise we just read from the data directory that we downloaded:
-```{r}
-ps = readRDS("../data/ps.rds")
 ps
 ```
 
