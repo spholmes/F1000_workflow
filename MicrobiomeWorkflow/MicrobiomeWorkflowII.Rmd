@@ -944,6 +944,8 @@ distance.
 ```{r outlier-detect, fig.cap="Exploratory ordination analysis with log abundances.",fig.wide= TRUE}
 sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
   				          breaks = c(0, 100, 200, 400))
+levels(sample_data(ps)$age_binned) <- list(Young100="(0,100]", Mid100to200="(100,200]", Old200="(200,400]")
+sample_data(ps)$family_relationship=gsub(" ","",sample_data(ps)$family_relationship)
 pslog <- transform_sample_counts(ps, function(x) log(1 + x))
 out.wuf.log <- ordinate(pslog, method = "MDS", distance = "wunifrac")
 evals <- out.wuf.log$values$Eigenvalues
@@ -1385,9 +1387,6 @@ days and much higher from age 100 to 400 days.
 Graph-based analyses {#graph-based-visualization-and-testing .unnumbered}
 =====================================
 
-
-
-
 Creating and plotting graphs {#creating-and-plotting-graphs .unnumbered}
 ----------------------------
 
@@ -1428,7 +1427,6 @@ library("igraph")
 library("ggnetwork")
 net <- make_network(ps, max.dist=0.35)
 sampledata <- data.frame(sample_data(ps))
-
 V(net)$id <- sampledata[names(V(net)), "host_subject_id"]
 V(net)$litter <- sampledata[names(V(net)), "family_relationship"]
 ```
@@ -1514,6 +1512,89 @@ We see from Figure \@ref(fig:knn-1-plot) that if a pair of
 samples has an edge between them in the nearest neighbor graph, they are
 overwhelmingly likely to be in the same litter.
 
+
+Linear modeling {#linear-modeling .unnumbered}
+---------------
+
+It is often of interest to evaluate the degree to which microbial
+community diversity reflects characteristics of the environment from
+which it was sampled. Unlike ordination, the purpose of this analysis is
+not to develop a representation of many bacteria with respect to sample
+characteristics; rather, it is to describe how a single measure of
+overall community structure[^1] is associated with sample
+characteristics. This is a somewhat simpler statistical goal, and can be
+addressed through linear modeling, for which there are a range of
+approaches in R. As an example, we will used a mixed-effects model to
+study the relationship between mouse microbial community diversity and
+the age and litter variables that have been our focus so far. This
+choice was motivated by the observation that younger mice have
+noticeably lower Shannon diversities, but that different mice have
+different baseline diversities. The mixed-effects model is a starting
+point for formalizing this observation.
+
+We first compute the Shannon diversity associated with each sample and
+join it with sample annotation.
+
+```{r lm-get-alpha-diversity}
+library("nlme")
+library("reshape2")
+ps_alpha_div <- estimate_richness(ps, split = TRUE, measure = "Shannon")
+ps_alpha_div$SampleID <- rownames(ps_alpha_div) %>%
+  as.factor()
+ps_samp <- sample_data(ps) %>%
+  unclass() %>%
+  data.frame() %>%
+  left_join(ps_alpha_div, by = "SampleID") %>%
+  melt(measure.vars = "Shannon",
+       variable.name = "diversity_measure",
+       value.name = "alpha_diversity")
+
+# reorder's facet from lowest to highest diversity
+diversity_means <- ps_samp %>%
+  group_by(host_subject_id) %>%
+  summarise(mean_div = mean(alpha_diversity)) %>%
+  arrange(mean_div)
+ps_samp$host_subject_id <- factor(ps_samp$host_subject_id)
+#                                  diversity_means$host_subject_id)
+```
+
+```{r lm-age}
+alpha_div_model <- lme(fixed = alpha_diversity ~ age_binned, data = ps_samp,
+                       random = ~ 1 | host_subject_id)
+```
+
+```{r lm-prediction-intervals}
+new_data <- expand.grid(host_subject_id = levels(ps_samp$host_subject_id),
+                        age_binned = levels(ps_samp$age_binned))
+new_data$pred <- predict(alpha_div_model, newdata = new_data)
+X <- model.matrix(eval(eval(alpha_div_model$call$fixed)[-2]),
+                  new_data[-ncol(new_data)])
+pred_var_fixed <- diag(X %*% alpha_div_model$varFix %*% t(X))
+new_data$pred_var <- pred_var_fixed + alpha_div_model$sigma ^ 2
+```
+
+
+```{r lm-fitted-plot}
+# fitted values, with error bars
+ggplot(ps_samp %>% left_join(new_data)) +
+  geom_errorbar(aes(x = age_binned, ymin = pred - 2 * sqrt(pred_var),
+                    ymax = pred + 2 * sqrt(pred_var)),
+                col = "#858585", size = .1) +
+  geom_point(aes(x = age_binned, y = alpha_diversity,
+                 col = family_relationship), size = 0.8) +
+  facet_wrap(~host_subject_id) +
+  scale_y_continuous(limits = c(2.4, 4.6), breaks = seq(0, 5, .5)) +
+  scale_color_brewer(palette = "Set2") +
+  labs(x = "Binned Age", y = "Shannon Diversity", color = "Litter") +
+  guides(col = guide_legend(override.aes = list(size = 4))) +
+  theme(panel.border = element_rect(color = "#787878", fill = alpha("white", 0)),
+        axis.text.x = element_text(angle = -90, size = 6),
+        axis.text.y = element_text(size = 6))
+```
+
+
+
+
 # Multitable techniques {#multitable-techniques .unnumbered}
 
 Many microbiome studies attempt to quantify variation in the microbial,
@@ -1576,10 +1657,10 @@ reflect signals present across multiple tables. We then apply PCA to
 this selected subset of features. In this sense, we use sparse CCA as a
 screening procedure, rather than as an ordination method.
 
-Our implementation is below. The parameters `penaltyx` and `penaltyz` are sparsity penalties.
-Larger values of  `penaltyx` will result in fewer selected microbes, similarly
-`penaltyz`
-modulates the number of selected metabolites. We tune them manually to
+Our implementation is below. The parameters `penaltyx` and `penaltyz` are sparsity penalties. Smaller values of penaltyx will result in fewer selected microbes, similarly penaltyz modulates the number of selected metabolites.
+See the documentation of the `CCA` in the `r CRANpkg("PMA")` package.
+
+We tune them manually to
 facilitate subsequent interpretation – we generally prefer more sparsity
 than the default parameters would provide.
 
@@ -1793,7 +1874,7 @@ Acknowledgments {#acknowledgments .unnumbered}
 The authors would like to thank the members of the Relman Lab for their
 valuable insights on microbiology and sequencing. We are also grateful
 to Nandita Garud, Leo Lahti, Zachary Charlop-Powers for reviewing the
-F1000Research workflow paper and to Martina Fu and Shaheen Essabhoy for code testing and
+F1000Research workflow paper and to Nikolaos Ignatiadis, Martina Fu and Shaheen Essabhoy for code testing and
 suggestions for the revised version.
 
 # References {.unnumbered}
