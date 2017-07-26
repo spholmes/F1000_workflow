@@ -202,10 +202,14 @@ fnRs[1:3]
 Most Illumina sequencing data shows a trend of decreasing average
 quality towards the end of sequencing reads.
 
+The first two forward reads:
 ```{r see-quality-F}
-ii <- sample(length(fnFs), 3)
-for(i in ii) { print(plotQualityProfile(fnFs[i]) + ggtitle("Fwd")) }
-for(i in ii) { print(plotQualityProfile(fnRs[i]) + ggtitle("Rev")) }
+plotQualityProfile(fnFs[1:2])
+```
+
+The first two reverse reads:
+```{r see-quality-R}
+plotQualityProfile(fnRs[1:2])
 ```
 
 Here, the forward reads maintain high quality throughout, while the
