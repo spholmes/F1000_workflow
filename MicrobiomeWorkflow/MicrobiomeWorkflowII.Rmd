@@ -1597,6 +1597,171 @@ ggplot(ps_samp %>% left_join(new_data)) +
 ```
 
 
+Hierarchical multiple testing {#hierarchical-multiple-testing .unnumbered}
+-----------------------------
+
+Hypothesis testing can be used to identify individual microbes whose
+abundance relates to sample variables of interest. A standard approach
+is to compute a test statistic for each bacteria individually, measuring
+its association with sample characteristics, and then jointly adjust
+$p$-values to ensure a False Discovery Rate upper bound. This can be
+accomplished through the Benjamini-Hochberg procedure, for example
+[@BH:1995]. However, this procedure does not exploit any structure among
+the tested hypotheses – for example, it is likely that if one
+Ruminococcus species is strongly associated with age, then others are as
+well. To integrate this information,
+[@benjamini2003hierarchical; @benjamini2014selective] proposed a
+hierarchical testing procedure, where taxonomic groups are only tested
+if higher levels are found to be be associated. In the case where many
+related species have a slight signal, this pooling of information can
+increase power.
+
+We apply this method to test the association between microbial abundance
+and age. This provides a complementary view of the earlier analyses,
+identifying individual bacteria that are responsible for the differences
+between young and old mice.
+
+We digress briefly from hierarchical testing to describe an alternative
+form of count normalization. Rather than working with the logged data as
+in our earlier analysis, we consider a variance stabilizing
+transformation introduced by [@LoveDESeq2] for RNA-seq data and in
+[@mcmurdie2014] for 16S rRNA generated count data and available in the
+`r Biocpkg("DESeq2")`
+package. The two transformations yield similar sets of significant
+microbes. One difference is that, after accounting for size factors, the
+histogram of row sums for DESeq is more spread out in the lower values,
+refer to Figure \@ref(fig:deseq-vis). This is the motivation of using such
+a transformation, although for high abundance counts, it is equivalent
+to the log, for lower and mid range abundances it does not crush the
+data and yields more powerful results. The code below illustrates the
+mechanics of computing ’s variance stabilizing transformation on a
+object.
+
+```{r deseq-transform}
+library("reshape2")
+library("DESeq2")
+#New version of DESeq2 needs special levels
+sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
+  				          breaks = c(0, 100, 200, 400))
+levels(sample_data(ps)$age_binned) <- list(Young100="(0,100]", Mid100to200="(100,200]", Old200="(200,400]")
+sample_data(ps)$family_relationship=gsub(" ","",sample_data(ps)$family_relationship)
+pslog 
+ps_dds <- phyloseq_to_deseq2(ps, design = ~ age_binned + family_relationship)
+
+# geometric mean, set to zero when all coordinates are zero
+geo_mean_protected <- function(x) {
+  if (all(x == 0)) {
+    return (0)
+  }
+  exp(mean(log(x[x != 0])))
+}
+
+geoMeans <- apply(counts(ps_dds), 1, geo_mean_protected)
+ps_dds <- estimateSizeFactors(ps_dds, geoMeans = geoMeans)
+ps_dds <- estimateDispersions(ps_dds)
+abund <- getVarianceStabilizedData(ps_dds)
+```
+
+
+We use the `r CRANpkg("structSSI")` package to perform the hierarchical
+testing [@sankaran2014structssi], we first shorten the names for each taxa/ASV.
+
+
+```{r structssi-shorten-names}
+short_names <- substr(rownames(abund), 1, 5)%>%
+  make.names(unique = TRUE)
+rownames(abund) <- short_names
+```
+
+```{r deseq-vis, fig.cap="DEseq transformation abundance"}
+abund_sums <- rbind(data.frame(sum = colSums(abund),
+                               sample = colnames(abund),
+                               type = "DESeq2"),
+                    data.frame(sum = rowSums(otu_table(pslog)),
+                               sample = rownames(otu_table(pslog)),
+                               type = "log(1 + x)"))
+
+ggplot(abund_sums) +
+  geom_histogram(aes(x = sum), binwidth = 20) +
+  facet_grid(type ~ .) +
+  xlab("Total abundance within sample")
+```  
+
+
+The histogram on the top gives the total DESeq2 transformed
+  abundance within each sample. The bottom histogram is the same as
+  that in Figure \ref@(fig:preprocessing-setup), and is included to
+  facilitate comparison.
+
+Unlike standard multiple hypothesis testing, the hierarchical testing
+procedure needs univariate tests for each higher-level taxonomic
+group, not just every species. A helper function,
+`treePValues`, is available for this; it expects an edgelist
+encoding parent-child relationships, with the first row specifying the
+root node.
+
+```{r structssi-unadjp }
+library("structSSI")
+el <- phy_tree(pslog)$edge
+el0 <- el
+el0 <- el0[nrow(el):1, ]
+el_names <- c(short_names, seq_len(phy_tree(pslog)$Nnode))
+el[, 1] <- el_names[el0[, 1]]
+el[, 2] <- el_names[as.numeric(el0[, 2])]
+unadj_p <- treePValues(el, abund, sample_data(pslog)$age_binned)
+```
+
+We can now correct $p$-value using the hierarchical testing procedure.
+The test results are guaranteed to control several variants of FDR
+control, but at different levels; we defer details to
+[@benjamini2003hierarchical; @benjamini2014selective; @sankaran2014structssi].
+```{r structssi-test}
+hfdr_res <- hFDR.adjust(unadj_p, el, .75)
+summary(hfdr_res)
+```
+
+```{r  structssi-test-plotres, eval=FALSE}
+#interactive part: not run
+plot(hfdr_res, height = 5000) # opens in a browser
+```
+
+![Screen shot](figure/structssi-screenshot.png)
+Figure :A screenshot of a subtree with many differentially abundant
+    bacteria, as determined by the hierarchical testing
+    procedure. Currently the user is hovering over the node associated
+    with bacteria GCGAG.33; this causes the adjusted $p$-value (0.0295)
+    to appear.
+    
+The plot opens in a new browser -- a static screenshot of a subtree is
+displayed above. Nodes are shaded
+according to $p$-values, from blue to orange, representing the
+strongest to weakest associations. Grey nodes were never
+tested, to focus power on more promising subtrees. Scanning the full
+tree, it becomes clear that the association between age group and
+bacterial abundance is present in only a few isolated taxonomic
+groups, but that it is quite strong in those groups. To give context
+to these results, we can retrieve the taxonomic identity of the
+rejected hypotheses.
+
+
+```{r structssi-tax}
+tax <- tax_table(pslog)[, c("Family", "Genus")] %>%
+  data.frame()
+tax$seq <- short_names
+```
+
+```{r structssi-test-res}
+options(digits=3)
+hfdr_res@p.vals$seq <- rownames(hfdr_res@p.vals)
+tax %>%
+  left_join(hfdr_res@p.vals) %>%
+  arrange(adjp) %>% head(10)
+```
+
+
+It seems that the most strongly associated bacteria all belong to
+family _Lachnospiraceae_, which is consistent with the random forest
+results.
 
 
 # Multitable techniques {#multitable-techniques .unnumbered}
