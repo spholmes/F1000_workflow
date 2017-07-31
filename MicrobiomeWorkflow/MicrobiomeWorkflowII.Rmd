@@ -2,7 +2,7 @@
 title: "Workflow for Microbiome Data Analysis: from raw reads to community analyses."
 author: 
   - name: Benjamin  J Callahan
-    affiliation: Department of Population Health and Pathobiology, NC State University, Raleigh NC, USA
+    affiliation: Department of Population Health and Pathobiology, NC State University, Raleigh, NC 27606
   - name: Kris Sankaran
     affiliation: Statistics Department, Stanford University, CA 94305
   - name: Julia A Fukuyama
@@ -118,7 +118,8 @@ In addition, the code can be easily adapted to accommodate batch
 effects, covariates and multiple experimental factors.
 
 This workflow is based on software packages from the open-source
-Bioconductor project [@Huber:2015].
+Bioconductor project [@Huber:2015] and some CRAN packages.
+
 We provide all steps necessary from
 the denoising and identification of the reads input as raw sequences as
 [fastq](https://en.wikipedia.org/wiki/FASTQ_format) files to the comparative testing and multivariate analyses of
@@ -184,7 +185,8 @@ identical and therefore it is always worth inspecting the quality of the
 data before proceeding.
 
 
-First we read in the names of the fastq files, and perform some string manipulation to get lists of the forward and reverse fastq files in matched order:
+First we read in the names of the fastq files, and perform some string manipulation to 
+get lists of the forward and reverse fastq files in matched order:
 ```{r filenames}
 # Sort ensures forward/reverse reads are in same order
 fnFs <- sort(list.files(miseq_path, pattern="_R1_001.fastq"))
@@ -1644,8 +1646,7 @@ library("DESeq2")
 sample_data(ps)$age_binned <- cut(sample_data(ps)$age,
   				          breaks = c(0, 100, 200, 400))
 levels(sample_data(ps)$age_binned) <- list(Young100="(0,100]", Mid100to200="(100,200]", Old200="(200,400]")
-sample_data(ps)$family_relationship=gsub(" ","",sample_data(ps)$family_relationship)
-pslog 
+sample_data(ps)$family_relationship = gsub(" ", "", sample_data(ps)$family_relationship)
 ps_dds <- phyloseq_to_deseq2(ps, design = ~ age_binned + family_relationship)
 
 # geometric mean, set to zero when all coordinates are zero
